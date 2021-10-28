@@ -2,6 +2,11 @@
 name = "jwks_client"
 version = "0.1.0"
 edition = "2018"
+authors = ["Mite Ristovski <mite.ristovski@hotmail.com>", "Simone Cottini <cottini.simone@gmail.com>"]
+license = "MIT"
+description = "JWKS-sync client implementation for Auth0"
+repository = "https://github.com/primait/jwks_client"
+readme = "README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
