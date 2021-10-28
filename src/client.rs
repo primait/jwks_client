@@ -46,10 +46,9 @@ impl<T: JwksSource + Send + Sync + 'static> JwksClient<T> {
 
         let key = self
             .cache
-            .get_or_try_insert_with(
-                key_id.clone(),
-                async move { source.fetch_keys().await?.take_key(&key_id) },
-            )
+            .get_or_try_insert_with(key_id.clone(), async move {
+                source.fetch_keys().await?.take_key(&key_id)
+            })
             .await?;
 
         Ok(key)
@@ -89,7 +88,8 @@ impl<T: JwksSource + Send + Sync + 'static> JwksClient<T> {
 
             match key {
                 JsonWebKey::Rsa(jwk) => {
-                    let decoding_key = DecodingKey::from_rsa_components(jwk.modulus(), jwk.exponent())?;
+                    let decoding_key =
+                        DecodingKey::from_rsa_components(jwk.modulus(), jwk.exponent())?;
                     // Can this block the current thread? (should I spawn_blocking?)
                     Ok(jsonwebtoken::decode(token, &decoding_key, &validation)?.claims)
                 }
