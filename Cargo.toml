@@ -1,5 +1,5 @@
 [package]
-name = "jwks_client.rs"
+name = "jwks_client_rs"
 version = "0.1.0"
 edition = "2018"
 authors = ["Mite Ristovski <mite.ristovski@hotmail.com>", "Simone Cottini <cottini.simone@gmail.com>"]
