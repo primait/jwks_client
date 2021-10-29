@@ -25,3 +25,7 @@ url = "2.2"
 tokio = { version = "1.11.0", features = ["macros"]}
 mockall = "0.10"
 httpmock = "0.6"
+
+[[example]]
+name = "get_jwks"
+path = "examples/get_jwks.rs"
