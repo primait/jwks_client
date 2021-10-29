@@ -35,5 +35,6 @@ async fn main() {
     let result: Result<JsonWebKey, JwksClientError> = client.get(kid.clone()).await;
     println!("Get with kid \"{}\": {:?}", kid, result.unwrap());
 
-    let result: Result<Claims, JwksClientError> = client.decode::<Claims>("token", "audience").await;
+    let result: Result<Claims, JwksClientError> =
+        client.decode::<Claims>("token", "audience").await;
 }
