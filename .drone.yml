@@ -16,7 +16,7 @@ steps:
     PLUGIN_DEPTH: 5
 
 - name: cache-restore
-  image: public.ecr.aws/prima/drone-tools:1.21.0
+  image: public.ecr.aws/prima/drone-tools:1.21.2
   commands:
   - . /etc/profile.d/ecs-credentials-endpoint
   - cache-restore
@@ -27,13 +27,11 @@ steps:
     path: /etc/profile.d/ecs-credentials-endpoint
   - name: docker
     path: /var/run/docker.sock
-  - name: docker-conf
-    path: /root/.docker
   depends_on:
   - git-clone
 
 - name: check-secrets
-  image: public.ecr.aws/prima/drone-tools:1.21.0
+  image: public.ecr.aws/prima/drone-tools:1.21.2
   commands:
   - . /etc/profile.d/ecs-credentials-endpoint
   - check-secrets-grants
@@ -44,22 +42,20 @@ steps:
   - git-clone
 
 - name: check-public-docker-images
-  image: public.ecr.aws/prima/drone-tools:1.21.0
+  image: public.ecr.aws/prima/drone-tools:1.21.2
   commands:
   - check-public-docker-images
   depends_on:
   - git-clone
 
 - name: build-image
-  image: public.ecr.aws/prima/drone-tools:1.21.0
+  image: public.ecr.aws/prima/drone-tools:1.21.2
   commands:
   - sed -i 's/USER app/USER root/g' ./Dockerfile
   - docker build -t prima/jwks_client-ci:${DRONE_COMMIT} ./
   volumes:
   - name: docker
     path: /var/run/docker.sock
-  - name: docker-conf
-    path: /root/.docker
   depends_on:
   - cache-restore
 
@@ -98,7 +94,6 @@ steps:
   environment:
     BUILD_ENV: dev
     CARGO_HOME: /drone/src/.cargo
-    CARGO_HTTP_CAINFO: ""
   depends_on:
   - cargo-clippy-ci
 
@@ -130,7 +125,7 @@ steps:
   - cargo-test
 
 - name: cache-save
-  image: public.ecr.aws/prima/drone-tools:1.21.0
+  image: public.ecr.aws/prima/drone-tools:1.21.2
   commands:
   - . /etc/profile.d/ecs-credentials-endpoint
   - cache-save .cargo target
@@ -141,8 +136,6 @@ steps:
     path: /etc/profile.d/ecs-credentials-endpoint
   - name: docker
     path: /var/run/docker.sock
-  - name: docker-conf
-    path: /root/.docker
   when:
     branch:
     - master
@@ -156,9 +149,6 @@ volumes:
 - name: ecs
   host:
     path: /etc/profile.d/ecs-credentials-endpoint
-- name: docker-conf
-  host:
-    path: /home/ec2-user/.docker
 
 trigger:
   event:
@@ -201,6 +191,6 @@ depends_on:
 
 ---
 kind: signature
-hmac: 86776795ecf9bc8683960829abb05efc001c5ef0ca421a08bd9896b2bfee4723
+hmac: 660babd592fe06c03a40acfaa3d967c1a060605bbe3b855c01d64e637cba2a8e
 
 ...
