@@ -16,7 +16,7 @@ steps:
     PLUGIN_DEPTH: 5
 
 - name: cache-restore
-  image: public.ecr.aws/prima/drone-tools:1.21.2
+  image: public.ecr.aws/prima/drone-tools:1.21.3
   commands:
   - . /etc/profile.d/ecs-credentials-endpoint
   - cache-restore
@@ -31,7 +31,7 @@ steps:
   - git-clone
 
 - name: check-secrets
-  image: public.ecr.aws/prima/drone-tools:1.21.2
+  image: public.ecr.aws/prima/drone-tools:1.21.3
   commands:
   - . /etc/profile.d/ecs-credentials-endpoint
   - check-secrets-grants
@@ -42,14 +42,14 @@ steps:
   - git-clone
 
 - name: check-public-docker-images
-  image: public.ecr.aws/prima/drone-tools:1.21.2
+  image: public.ecr.aws/prima/drone-tools:1.21.3
   commands:
   - check-public-docker-images
   depends_on:
   - git-clone
 
 - name: build-image
-  image: public.ecr.aws/prima/drone-tools:1.21.2
+  image: public.ecr.aws/prima/drone-tools:1.21.3
   commands:
   - sed -i 's/USER app/USER root/g' ./Dockerfile
   - docker build -t prima/jwks_client-ci:${DRONE_COMMIT} ./
@@ -94,6 +94,7 @@ steps:
   environment:
     BUILD_ENV: dev
     CARGO_HOME: /drone/src/.cargo
+    CARGO_HTTP_CAINFO: ""
   depends_on:
   - cargo-clippy-ci
 
@@ -125,10 +126,10 @@ steps:
   - cargo-test
 
 - name: cache-save
-  image: public.ecr.aws/prima/drone-tools:1.21.2
+  image: public.ecr.aws/prima/drone-tools:1.21.3
   commands:
   - . /etc/profile.d/ecs-credentials-endpoint
-  - cache-save .cargo target
+  - cache-save target
   environment:
     BUCKET_NAME: prima-ci-cache
   volumes:
@@ -153,6 +154,77 @@ volumes:
 trigger:
   event:
   - push
+
+---
+kind: pipeline
+name: build-production
+
+platform:
+  os: linux
+  arch: amd64
+
+clone:
+  disable: true
+
+steps:
+- name: git-clone
+  image: public.ecr.aws/prima/drone-git:1.3-3
+  environment:
+    PLUGIN_DEPTH: 5
+
+- name: cache-restore
+  image: public.ecr.aws/prima/drone-tools:1.21.3
+  commands:
+  - . /etc/profile.d/ecs-credentials-endpoint
+  - cache-restore
+  environment:
+    BUCKET_NAME: prima-ci-cache
+  volumes:
+  - name: ecs
+    path: /etc/profile.d/ecs-credentials-endpoint
+  - name: docker
+    path: /var/run/docker.sock
+  depends_on:
+  - git-clone
+
+- name: build-image
+  image: public.ecr.aws/prima/drone-tools:1.21.3
+  commands:
+  - sed -i 's/USER app/USER root/g' ./Dockerfile
+  - docker build -t prima/jwks_client-ci:${DRONE_COMMIT} ./
+  volumes:
+  - name: docker
+    path: /var/run/docker.sock
+  depends_on:
+  - cache-restore
+
+- name: build-production
+  image: prima/jwks_client-ci:${DRONE_COMMIT}
+  commands:
+  - . /etc/profile.d/ecs-credentials-endpoint
+  - ./deploy/build production
+  environment:
+    CARGO_AUTH_KEY:
+      from_secret: cargo_auth_key
+  volumes:
+  - name: ecs
+    path: /etc/profile.d/ecs-credentials-endpoint
+  depends_on:
+  - build-image
+
+volumes:
+- name: docker
+  host:
+    path: /var/run/docker.sock
+- name: ecs
+  host:
+    path: /etc/profile.d/ecs-credentials-endpoint
+
+trigger:
+  event:
+  - tag
+  ref:
+  - refs/tags/*.*.*
 
 ---
 kind: pipeline
@@ -188,9 +260,10 @@ trigger:
 
 depends_on:
 - default
+- build-production
 
 ---
 kind: signature
-hmac: 660babd592fe06c03a40acfaa3d967c1a060605bbe3b855c01d64e637cba2a8e
+hmac: e8c12b4bfe0e5f9393318800e33074cea21dfd73e4b3eaee21f1abb76f0e29a6
 
 ...
