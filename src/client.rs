@@ -10,8 +10,8 @@ use crate::keyset::JsonWebKey;
 use crate::source::JwksSource;
 
 const DEFAULT_CACHE_SIZE: usize = 100;
-//TODO: we can also use auth0 response cache-control headers instead of this const
-const DEFAULT_CACHE_TTL: Duration = Duration::from_secs(60);
+//TODO: we can also use auth0 response cache-control headers instead of this const (1 day)
+const DEFAULT_CACHE_TTL: Duration = Duration::from_secs(86400);
 
 pub struct JwksClient<T: JwksSource> {
     source: Arc<T>,
