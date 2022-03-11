@@ -1,7 +1,7 @@
 [package]
 name = "jwks_client_rs"
 version = "0.2.0"
-edition = "2018"
+edition = "2021"
 authors = ["Mite Ristovski <mite.ristovski@hotmail.com>", "Simone Cottini <cottini.simone@gmail.com>"]
 license = "MIT"
 description = "JWKS-sync client implementation for Auth0"
