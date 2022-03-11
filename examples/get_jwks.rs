@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use reqwest::Url;
 
-use jwks_client_rs::source::WebSource;
+use jwks_client_rs::source::{WebSource, WebSourceBuilder};
 use jwks_client_rs::{JsonWebKey, JwksClient, JwksClientError};
 
 #[tokio::main]
@@ -17,7 +17,10 @@ async fn main() {
     let url: Url = Url::from_str(url_string.as_str()).unwrap();
     let url: Url = url.join(".well-known/jwks.json").unwrap();
 
-    let source: WebSource = WebSource::new(url);
+    let source: WebSource = WebSourceBuilder::new(url)
+        .build()
+        .expect("Failed to build WebSource");
+
     let client: JwksClient<WebSource> = JwksClient::new(source);
 
     // The kid "unknown" cannot be a JWKS valid KID. This must not be found here
