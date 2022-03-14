@@ -22,7 +22,12 @@ use jwks_client_rs::JwksClient;
 
 // here you must join your `BASE_AUTH0_URL` env var with `.well-known/jwks.json` or whatever is the jwks url
 let url: reqwest::Url = todo!();
-let source: WebSource = WebSource::new(url); // You can define a different source too using `JwksSource` trait
+let timeout: std::time::Duration = todo!();
+// You can define a different source too using `JwksSource` trait
+let source: WebSource = WebSource::builder()
+    .with_timeout(timeout)
+    .with_connect_timeout(timeout)
+    .build(url); 
 let client: JwksClient = JwksClient::new(source);
 
 // Store your client in your application context or whatever
