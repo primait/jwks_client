@@ -1,17 +1,18 @@
-use jsonwebtoken::{Algorithm, DecodingKey, Validation};
-use moka::future::{Cache, CacheBuilder};
-use serde::de::DeserializeOwned;
 use std::str::FromStr;
 use std::sync::Arc;
 use std::time::Duration;
+
+use jsonwebtoken::{Algorithm, DecodingKey, Validation};
+use moka::future::{Cache, CacheBuilder};
+use serde::de::DeserializeOwned;
 
 use crate::error::{Error, JwksClientError};
 use crate::keyset::JsonWebKey;
 use crate::source::JwksSource;
 
 const DEFAULT_CACHE_SIZE: usize = 100;
-//TODO: we can also use auth0 response cache-control headers instead of this const
-const DEFAULT_CACHE_TTL: Duration = Duration::from_secs(60);
+//TODO: we can also use auth0 response cache-control headers instead of this const (1 day)
+const DEFAULT_CACHE_TTL: Duration = Duration::from_secs(86400);
 
 pub struct JwksClient<T: JwksSource> {
     source: Arc<T>,
@@ -102,13 +103,14 @@ impl<T: JwksSource + Send + Sync + 'static> JwksClient<T> {
 
 #[cfg(test)]
 mod test {
-    use crate::error::Error;
-    use crate::source::WebSource;
-    use crate::{JwksClient, JwksClientError};
     use httpmock::prelude::*;
     use jsonwebtoken::{Algorithm, EncodingKey, Header};
     use serde_json::{json, Value};
     use url::Url;
+
+    use crate::error::Error;
+    use crate::source::WebSource;
+    use crate::{JwksClient, JwksClientError};
 
     const MODULUS: &str = "qjNzuylUQpyU9qX3_bMGpiRUO1G_xKbB0fyqQy0naETviHIqPS2D3lGcfK9XIFLZOq1O7K2KRXEE5nSDTf-S9qc0nPRkS38CXK4DBKPTBXtjufLK3e9lN9dh8Ehazx8xNmdCc6aocVKKlamOJv7Qr_UgmoFllq7W-UQ0YK2qfN8WgqxOQUPrss-40RWslCAKpjZmMOpIpRXQLGmR-GGZUdQZXnTUhnhRyDz5VcXHH--o1PkH_F0rlabMxgNFfsCIWKWbGy8G89bNrvoeVKq15QPCeaGBV13f2Do6XHGt0l2M3eYz85wyz1pISvjQuR4PrtJr6VsuHz3Puh_KgY8GqQ";
     const EXPONENT: &str = "AQAB";
@@ -116,8 +118,8 @@ mod test {
     #[tokio::test]
     async fn get_key() {
         let server = MockServer::start();
-        let path = "/keys";
-        let kid = "go14h7EBWUvPRncjniI_2";
+        let path: &str = "/keys";
+        let kid: &str = "go14h7EBWUvPRncjniI_2";
 
         let mock = server.mock(|when, then| {
             when.method(GET).path(path);
@@ -127,9 +129,9 @@ mod test {
                 .json_body(jwks_endpoint_response(kid));
         });
 
-        let url = Url::parse(&server.url(path)).unwrap();
-        let source = WebSource::new(url);
-        let client = JwksClient::new(source);
+        let url: Url = Url::parse(&server.url(path)).unwrap();
+        let source: WebSource = WebSource::builder().build(url).unwrap();
+        let client: JwksClient<WebSource> = JwksClient::new(source);
 
         assert!(client.get(kid.to_string()).await.is_ok());
         mock.assert();
@@ -138,8 +140,8 @@ mod test {
     #[tokio::test]
     async fn get_key_fails_to_fetch_keys() {
         let server = MockServer::start();
-        let path = "/keys";
-        let kid = "go14h7EBWUvPRncjniI_2";
+        let path: &str = "/keys";
+        let kid: &str = "go14h7EBWUvPRncjniI_2";
 
         let mock = server.mock(|when, then| {
             when.method(GET).path(path);
@@ -147,9 +149,9 @@ mod test {
             then.status(400).body("Error");
         });
 
-        let url = Url::parse(&server.url(path)).unwrap();
-        let source = WebSource::new(url);
-        let client = JwksClient::new(source);
+        let url: Url = Url::parse(&server.url(path)).unwrap();
+        let source: WebSource = WebSource::builder().build(url).unwrap();
+        let client: JwksClient<WebSource> = JwksClient::new(source);
 
         let result = client.get(kid.to_string()).await;
         assert!(result.is_err());
@@ -168,8 +170,8 @@ mod test {
     #[tokio::test]
     async fn get_key_key_not_found() {
         let server = MockServer::start();
-        let path = "/keys";
-        let kid = "other_kid";
+        let path: &str = "/keys";
+        let kid: &str = "other_kid";
 
         let mock = server.mock(|when, then| {
             when.method(GET).path(path);
@@ -179,9 +181,9 @@ mod test {
                 .json_body(jwks_endpoint_response("go14h7EBWUvPRncjniI_2"));
         });
 
-        let url = Url::parse(&server.url(path)).unwrap();
-        let source = WebSource::new(url);
-        let client = JwksClient::new(source);
+        let url: Url = Url::parse(&server.url(path)).unwrap();
+        let source: WebSource = WebSource::builder().build(url).unwrap();
+        let client: JwksClient<WebSource> = JwksClient::new(source);
 
         let result = client.get(kid.to_string()).await;
         assert!(result.is_err());
