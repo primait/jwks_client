@@ -20,6 +20,12 @@ pub struct WebSource {
     url: Url,
 }
 
+impl WebSource {
+    pub fn builder() -> WebSourceBuilder {
+        WebSourceBuilder::new()
+    }
+}
+
 #[async_trait]
 impl JwksSource for WebSource {
     async fn fetch_keys(&self) -> Result<JsonWebKeySet, Error> {
@@ -38,16 +44,14 @@ impl JwksSource for WebSource {
 
 pub struct WebSourceBuilder {
     client_builder: reqwest::ClientBuilder,
-    url: Url,
     timeout_opt: Option<Duration>,
     connect_timeout_opt: Option<Duration>,
 }
 
 impl WebSourceBuilder {
-    pub fn new(url: Url) -> Self {
+    fn new() -> Self {
         Self {
             client_builder: reqwest::ClientBuilder::default(),
-            url,
             timeout_opt: None,
             connect_timeout_opt: None,
         }
@@ -67,16 +71,16 @@ impl WebSourceBuilder {
         }
     }
 
-    pub fn build(self) -> Result<WebSource, reqwest::Error> {
+    pub fn build(self, url: Url) -> Result<WebSource, reqwest::Error> {
         let timeout: Duration = self.timeout_opt.unwrap_or(TIMEOUT);
         let connect_timeout: Duration = self.connect_timeout_opt.unwrap_or(CONNECT_TIMEOUT);
         Ok(WebSource {
+            url,
             client: self
                 .client_builder
                 .timeout(timeout)
                 .connect_timeout(connect_timeout)
                 .build()?,
-            url: self.url,
         })
     }
 }
