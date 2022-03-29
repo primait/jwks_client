@@ -1,11 +1,13 @@
-use crate::source::JwksSource;
-use crate::JwksClient;
 use std::marker::PhantomData;
 use std::time::Duration;
+
+use crate::source::JwksSource;
+use crate::JwksClient;
 
 pub struct JwksClientBuilder<T> {
     ttl_opt: Option<Duration>,
     t: PhantomData<T>,
+    // New PR to add this?
     // cache_size: Option<usize>,
 }
 

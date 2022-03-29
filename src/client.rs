@@ -2,10 +2,10 @@ use std::str::FromStr;
 use std::sync::Arc;
 use std::time::Duration;
 
-use crate::builder::JwksClientBuilder;
 use jsonwebtoken::{Algorithm, DecodingKey, Validation};
 use serde::de::DeserializeOwned;
 
+use crate::builder::JwksClientBuilder;
 use crate::cache::Cache;
 use crate::error::{Error, JwksClientError};
 use crate::keyset::JsonWebKey;
@@ -104,10 +104,11 @@ impl<T: JwksSource + Send + Sync + 'static> JwksClient<T> {
 
 #[cfg(test)]
 mod test {
+    use std::time::Duration;
+
     use httpmock::prelude::*;
     use jsonwebtoken::{Algorithm, EncodingKey, Header};
     use serde_json::{json, Value};
-    use std::time::Duration;
     use url::Url;
 
     use crate::error::Error;
