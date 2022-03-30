@@ -1,79 +1,68 @@
-use std::collections::HashMap;
 use std::future::Future;
-use std::hash::Hash;
 use std::sync::Arc;
 use std::time::Duration as StdDuration;
 
 use chrono::{Duration, Utc};
 use tokio::sync::RwLock;
-use tokio::sync::{Mutex, MutexGuard, RwLockReadGuard, RwLockWriteGuard};
+use tokio::sync::{RwLockReadGuard, RwLockWriteGuard};
 
-type Map<K, V> = HashMap<K, Mutex<Entry<V>>>;
+use crate::error::Error;
+use crate::keyset::JsonWebKeySet;
+use crate::JsonWebKey;
 
 #[derive(Clone)]
-pub struct Cache<K, V> {
-    inner: Arc<RwLock<Map<K, V>>>,
+pub struct Cache {
+    inner: Arc<RwLock<Entry<JsonWebKeySet>>>,
     time_to_live: Duration,
 }
 
-impl<K: Clone + Eq + Hash, V: Clone> Cache<K, V> {
+impl Cache {
     pub fn new(time_to_live: StdDuration) -> Self {
+        let ttl: Duration = Duration::from_std(time_to_live)
+            .expect("Failed to convert from `std::time::Duration` to `chrono::Duration`");
+        let json_web_key_set: JsonWebKeySet = JsonWebKeySet::empty();
+
         Self {
-            inner: Arc::new(RwLock::new(HashMap::new())),
-            time_to_live: Duration::from_std(time_to_live)
-                .expect("Failed to convert from `std::time::Duration` to `chrono::Duration`"),
+            inner: Arc::new(RwLock::new(Entry::new(&json_web_key_set, &ttl))),
+            time_to_live: ttl,
         }
     }
 
-    pub async fn get_or_try_insert_with<F, E>(&self, key: &K, future: F) -> Result<V, E>
+    pub async fn get_or_refresh<F>(&self, key: &str, future: F) -> Result<JsonWebKey, Error>
     where
-        F: Future<Output = Result<V, E>> + Send + 'static,
-        E: Send + Sync + 'static,
+        F: Future<Output = Result<JsonWebKeySet, Error>> + Send + 'static,
     {
-        let read: RwLockReadGuard<Map<K, V>> = self.inner.read().await;
+        let read: RwLockReadGuard<Entry<JsonWebKeySet>> = self.inner.read().await;
+        let entry: Entry<JsonWebKeySet> = (*read).clone();
+        // Drop RwLock read guard prematurely to be able to write in the lock
+        drop(read);
 
-        let value: V = match read.get(key) {
-            None => {
-                // Drop RwLock read guard prematurely to be able to write in the lock
-                drop(read);
-                let v: V = future.await?;
-                self.put::<E>(key, &v).await?;
-                v
-            }
-            Some(mutex) => {
-                let mut guard: MutexGuard<Entry<V>> = mutex.lock().await;
-
-                if guard.is_expired() {
-                    match future.await {
-                        Ok(value) => {
-                            // Update guard with new value caught from remote
-                            *guard = Entry::new(&value, &self.time_to_live);
-                            value
-                        }
-                        Err(_) => guard.value.clone(),
-                    }
-                } else {
-                    guard.value.clone()
-                }
-            }
-        };
-
-        Ok(value)
+        match entry.value.get_key(key) {
+            // Key not found. Maybe a refresh is needed
+            Err(_) => self.try_refresh(future).await.and_then(|v| v.take_key(key)),
+            // Specified key exist but a refresh is needed
+            Ok(json_web_key) if entry.is_expired() => self
+                .try_refresh(future)
+                .await
+                .and_then(|v| v.take_key(key))
+                .or_else(|_| Ok(json_web_key.to_owned())),
+            // Specified key exist and is still valid. Return this one
+            Ok(key) => Ok(key.to_owned()),
+        }
     }
 
-    async fn put<E>(&self, key: &K, value: &V) -> Result<Option<Mutex<Entry<V>>>, E>
+    async fn try_refresh<F>(&self, future: F) -> Result<JsonWebKeySet, Error>
     where
-        E: Send + Sync + 'static,
+        F: Future<Output = Result<JsonWebKeySet, Error>> + Send + 'static,
     {
-        let mut guard: RwLockWriteGuard<HashMap<K, Mutex<Entry<V>>>> = self.inner.write().await;
-
-        Ok((*guard).insert(
-            key.clone(),
-            Mutex::new(Entry::new(value, &self.time_to_live)),
-        ))
+        let set: JsonWebKeySet = future.await?;
+        let mut guard: RwLockWriteGuard<Entry<JsonWebKeySet>> = self.inner.write().await;
+        *guard = Entry::new(&set, &self.time_to_live);
+        Ok(set)
     }
 }
 
+#[derive(Clone)]
 pub(crate) struct Entry<V> {
     value: V,
     expire_time_millis: i64,

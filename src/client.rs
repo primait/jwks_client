@@ -2,7 +2,7 @@ use std::str::FromStr;
 use std::sync::Arc;
 use std::time::Duration;
 
-use jsonwebtoken::{Algorithm, DecodingKey, Validation};
+use jsonwebtoken::{Algorithm, DecodingKey, Header, Validation};
 use serde::de::DeserializeOwned;
 
 use crate::builder::JwksClientBuilder;
@@ -15,7 +15,7 @@ const DEFAULT_CACHE_TTL: Duration = Duration::from_secs(86400);
 
 pub struct JwksClient<T: JwksSource> {
     source: Arc<T>,
-    cache: Cache<String, JsonWebKey>,
+    cache: Cache,
 }
 
 impl<T: JwksSource> Clone for JwksClient<T> {
@@ -48,9 +48,7 @@ impl<T: JwksSource + Send + Sync + 'static> JwksClient<T> {
 
         let key: JsonWebKey = self
             .cache
-            .get_or_try_insert_with(&key_id.clone(), async move {
-                source.fetch_keys().await?.take_key(&key_id)
-            })
+            .get_or_refresh(&key_id.clone(), async move { source.fetch_keys().await })
             .await?;
 
         Ok(key)
@@ -73,10 +71,10 @@ impl<T: JwksSource + Send + Sync + 'static> JwksClient<T> {
         token: &str,
         audience: &[impl ToString],
     ) -> Result<O, JwksClientError> {
-        let header = jsonwebtoken::decode_header(token)?;
+        let header: Header = jsonwebtoken::decode_header(token)?;
 
         if let Some(kid) = header.kid {
-            let key = self.get(kid).await?;
+            let key: JsonWebKey = self.get(kid).await?;
 
             let mut validation = if let Some(alg) = key.alg() {
                 Validation::new(Algorithm::from_str(alg)?)
@@ -90,7 +88,7 @@ impl<T: JwksSource + Send + Sync + 'static> JwksClient<T> {
 
             match key {
                 JsonWebKey::Rsa(jwk) => {
-                    let decoding_key =
+                    let decoding_key: DecodingKey =
                         DecodingKey::from_rsa_components(jwk.modulus(), jwk.exponent())?;
                     // Can this block the current thread? (should I spawn_blocking?)
                     Ok(jsonwebtoken::decode(token, &decoding_key, &validation)?.claims)

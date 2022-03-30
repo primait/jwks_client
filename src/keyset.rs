@@ -10,6 +10,10 @@ pub struct JsonWebKeySet {
 }
 
 impl JsonWebKeySet {
+    pub(crate) fn empty() -> Self {
+        Self { keys: vec![] }
+    }
+
     pub fn get_key(&self, key_id: &str) -> Result<&JsonWebKey, Error> {
         self.keys
             .iter()
