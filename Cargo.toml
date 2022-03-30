@@ -11,6 +11,7 @@ readme = "README.md"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+tokio = { version = "1", features = ["sync", "macros"] }
 anyhow = "1.0.44"
 async-trait = "0.1.51"
 jsonwebtoken = "8.0.0-beta.2"
@@ -22,7 +23,6 @@ thiserror = "1.0.29"
 url = "2.2"
 
 [dev-dependencies]
-tokio = { version = "1.11.0", features = ["macros"]}
 mockall = "0.10"
 httpmock = "0.6"
 rand = "0.8"

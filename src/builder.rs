@@ -6,7 +6,7 @@ use crate::JwksClient;
 
 pub struct JwksClientBuilder<T> {
     ttl_opt: Option<Duration>,
-    t: PhantomData<T>,
+    t: PhantomData<*const T>,
     // New PR to add this?
     // cache_size: Option<usize>,
 }
@@ -26,6 +26,7 @@ impl<T: JwksSource + Send + Sync + 'static> JwksClientBuilder<T> {
         }
     }
 
+    #[must_use]
     pub fn build(self, source: T) -> JwksClient<T> {
         JwksClient::new(source, self.ttl_opt)
     }

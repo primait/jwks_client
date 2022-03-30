@@ -44,11 +44,11 @@ impl<T: JwksSource + Send + Sync + 'static> JwksClient<T> {
     /// Retrieves the key from the cache, if not found it fetches it from the provided `source`.
     /// If the key is not found after fetching it, returns an error.
     pub async fn get(&self, key_id: String) -> Result<JsonWebKey, JwksClientError> {
-        let source = self.source.clone();
+        let source: Arc<T> = self.source.clone();
 
-        let key = self
+        let key: JsonWebKey = self
             .cache
-            .get_or_try_insert_with(&key_id.clone(), || async move {
+            .get_or_try_insert_with(&key_id.clone(), async move {
                 source.fetch_keys().await?.take_key(&key_id)
             })
             .await?;
