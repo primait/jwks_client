@@ -1,4 +1,5 @@
 use std::future::Future;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration as StdDuration;
 
@@ -14,6 +15,7 @@ use crate::JsonWebKey;
 pub struct Cache {
     inner: Arc<RwLock<Entry>>,
     time_to_live: Duration,
+    refreshed: Arc<AtomicBool>,
 }
 
 impl Cache {
@@ -25,6 +27,7 @@ impl Cache {
         Self {
             inner: Arc::new(RwLock::new(Entry::new(json_web_key_set, &ttl))),
             time_to_live: ttl,
+            refreshed: Arc::new(AtomicBool::new(false)),
         }
     }
 
@@ -56,10 +59,18 @@ impl Cache {
     where
         F: Future<Output = Result<JsonWebKeySet, Error>> + Send + 'static,
     {
-        let set: JsonWebKeySet = future.await?;
         let mut guard: RwLockWriteGuard<Entry> = self.inner.write().await;
-        *guard = Entry::new(set.clone(), &self.time_to_live);
-        Ok(set)
+        let _ = self.refreshed.swap(false, Ordering::Relaxed);
+        
+        if !self.refreshed.load(Ordering::SeqCst) {
+            let set: JsonWebKeySet = future.await?;
+            *guard = Entry::new(set.clone(), &self.time_to_live);
+            let _ = self.refreshed.swap(true, Ordering::Relaxed);
+            Ok(set)
+        } else {
+            Ok((*guard).set.clone())
+        }
+        // we drop the write guard here so "refresh=true" for the other threads/tasks
     }
 }
 
