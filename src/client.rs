@@ -48,7 +48,7 @@ impl<T: JwksSource + Send + Sync + 'static> JwksClient<T> {
 
         let key: JsonWebKey = self
             .cache
-            .get_or_refresh(&key_id.clone(), async move { source.fetch_keys().await })
+            .get_or_refresh(&key_id, async move { source.fetch_keys().await })
             .await?;
 
         Ok(key)

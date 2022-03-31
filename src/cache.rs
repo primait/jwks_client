@@ -12,7 +12,7 @@ use crate::JsonWebKey;
 
 #[derive(Clone)]
 pub struct Cache {
-    inner: Arc<RwLock<Entry<JsonWebKeySet>>>,
+    inner: Arc<RwLock<Entry>>,
     time_to_live: Duration,
 }
 
@@ -23,7 +23,7 @@ impl Cache {
         let json_web_key_set: JsonWebKeySet = JsonWebKeySet::empty();
 
         Self {
-            inner: Arc::new(RwLock::new(Entry::new(&json_web_key_set, &ttl))),
+            inner: Arc::new(RwLock::new(Entry::new(json_web_key_set, &ttl))),
             time_to_live: ttl,
         }
     }
@@ -32,22 +32,23 @@ impl Cache {
     where
         F: Future<Output = Result<JsonWebKeySet, Error>> + Send + 'static,
     {
-        let read: RwLockReadGuard<Entry<JsonWebKeySet>> = self.inner.read().await;
-        let entry: Entry<JsonWebKeySet> = (*read).clone();
+        let read: RwLockReadGuard<Entry> = self.inner.read().await;
+        let is_entry_expired: bool = (*read).is_expired();
+        let get_key_result: Result<JsonWebKey, Error> = (*read).set.get_key(key).cloned();
         // Drop RwLock read guard prematurely to be able to write in the lock
         drop(read);
 
-        match entry.value.get_key(key) {
+        match get_key_result {
             // Key not found. Maybe a refresh is needed
             Err(_) => self.try_refresh(future).await.and_then(|v| v.take_key(key)),
             // Specified key exist but a refresh is needed
-            Ok(json_web_key) if entry.is_expired() => self
+            Ok(json_web_key) if is_entry_expired => self
                 .try_refresh(future)
                 .await
                 .and_then(|v| v.take_key(key))
-                .or_else(|_| Ok(json_web_key.to_owned())),
+                .or(Ok(json_web_key)),
             // Specified key exist and is still valid. Return this one
-            Ok(key) => Ok(key.to_owned()),
+            Ok(key) => Ok(key),
         }
     }
 
@@ -56,22 +57,21 @@ impl Cache {
         F: Future<Output = Result<JsonWebKeySet, Error>> + Send + 'static,
     {
         let set: JsonWebKeySet = future.await?;
-        let mut guard: RwLockWriteGuard<Entry<JsonWebKeySet>> = self.inner.write().await;
-        *guard = Entry::new(&set, &self.time_to_live);
+        let mut guard: RwLockWriteGuard<Entry> = self.inner.write().await;
+        *guard = Entry::new(set.clone(), &self.time_to_live);
         Ok(set)
     }
 }
 
-#[derive(Clone)]
-pub(crate) struct Entry<V> {
-    value: V,
+struct Entry {
+    set: JsonWebKeySet,
     expire_time_millis: i64,
 }
 
-impl<V: Clone> Entry<V> {
-    fn new(value: &V, expiration: &Duration) -> Self {
+impl Entry {
+    fn new(set: JsonWebKeySet, expiration: &Duration) -> Self {
         Self {
-            value: value.clone(),
+            set,
             expire_time_millis: Utc::now().timestamp_millis() + expiration.num_milliseconds(),
         }
     }
