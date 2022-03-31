@@ -59,8 +59,8 @@ impl Cache {
     where
         F: Future<Output = Result<JsonWebKeySet, Error>> + Send + 'static,
     {
-        let mut guard: RwLockWriteGuard<Entry> = self.inner.write().await;
         self.refreshed.store(false, Ordering::SeqCst);
+        let mut guard: RwLockWriteGuard<Entry> = self.inner.write().await;
 
         if !self.refreshed.load(Ordering::SeqCst) {
             let set: JsonWebKeySet = future.await?;
