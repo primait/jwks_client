@@ -60,12 +60,12 @@ impl Cache {
         F: Future<Output = Result<JsonWebKeySet, Error>> + Send + 'static,
     {
         let mut guard: RwLockWriteGuard<Entry> = self.inner.write().await;
-        let _ = self.refreshed.swap(false, Ordering::Relaxed);
+        self.refreshed.store(false, Ordering::Relaxed);
 
         if !self.refreshed.load(Ordering::SeqCst) {
             let set: JsonWebKeySet = future.await?;
             *guard = Entry::new(set.clone(), &self.time_to_live);
-            let _ = self.refreshed.swap(true, Ordering::Relaxed);
+            self.refreshed.store(true, Ordering::Relaxed);
             Ok(set)
         } else {
             Ok((*guard).set.clone())
