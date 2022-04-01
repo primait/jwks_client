@@ -1,4 +1,5 @@
 use std::str::FromStr;
+use std::time::Duration;
 
 use reqwest::Url;
 
@@ -21,7 +22,11 @@ async fn main() {
         .build(url)
         .expect("Failed to build WebSource");
 
-    let client: JwksClient<WebSource> = JwksClient::new(source);
+    let time_to_live: Duration = Duration::from_secs(60);
+
+    let client: JwksClient<WebSource> = JwksClient::builder()
+        .time_to_live(time_to_live)
+        .build(source);
 
     // The kid "unknown" cannot be a JWKS valid KID. This must not be found here
     let result: Result<JsonWebKey, JwksClientError> = client.get("unknown".to_string()).await;

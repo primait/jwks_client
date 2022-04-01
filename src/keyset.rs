@@ -10,6 +10,10 @@ pub struct JsonWebKeySet {
 }
 
 impl JsonWebKeySet {
+    pub(crate) fn empty() -> Self {
+        Self { keys: vec![] }
+    }
+
     pub fn get_key(&self, key_id: &str) -> Result<&JsonWebKey, Error> {
         self.keys
             .iter()
@@ -55,6 +59,13 @@ impl JsonWebKey {
             JsonWebKey::Rsa(rsa_pk) => Ok(rsa_pk),
         }
     }
+
+    #[cfg(test)]
+    pub fn x5t(&self) -> Option<String> {
+        match self {
+            JsonWebKey::Rsa(rsa_pk) => rsa_pk.x5t.clone(),
+        }
+    }
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -67,6 +78,8 @@ pub struct RsaPublicJwk {
     // X.509 certificate chain
     #[serde(rename(deserialize = "x5c"))]
     certificates: Option<Vec<String>>,
+    #[cfg(test)]
+    x5t: Option<String>,
     #[serde(rename(deserialize = "n"))]
     modulus: String,
     #[serde(rename(deserialize = "e"))]

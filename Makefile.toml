@@ -14,7 +14,7 @@ args = [
 
 [tasks.test]
 command = "cargo"
-args = ["test"]
+args = ["test", "${@}"]
 
 [tasks.clippy]
 command = "cargo"

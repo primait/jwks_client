@@ -2,21 +2,20 @@ use std::str::FromStr;
 use std::sync::Arc;
 use std::time::Duration;
 
-use jsonwebtoken::{Algorithm, DecodingKey, Validation};
-use moka::future::{Cache, CacheBuilder};
+use jsonwebtoken::{Algorithm, DecodingKey, Header, Validation};
 use serde::de::DeserializeOwned;
 
+use crate::builder::JwksClientBuilder;
+use crate::cache::Cache;
 use crate::error::{Error, JwksClientError};
 use crate::keyset::JsonWebKey;
 use crate::source::JwksSource;
 
-const DEFAULT_CACHE_SIZE: usize = 100;
-//TODO: we can also use auth0 response cache-control headers instead of this const (1 day)
 const DEFAULT_CACHE_TTL: Duration = Duration::from_secs(86400);
 
 pub struct JwksClient<T: JwksSource> {
     source: Arc<T>,
-    cache: Cache<String, JsonWebKey>,
+    cache: Cache,
 }
 
 impl<T: JwksSource> Clone for JwksClient<T> {
@@ -31,25 +30,25 @@ impl<T: JwksSource> Clone for JwksClient<T> {
 impl<T: JwksSource + Send + Sync + 'static> JwksClient<T> {
     /// Constructs the client.
     /// This should be cloned when passed to threads.
-    pub fn new(source: T) -> Self {
+    pub(crate) fn new(source: T, ttl_opt: Option<Duration>) -> Self {
         Self {
             source: Arc::new(source),
-            cache: CacheBuilder::new(DEFAULT_CACHE_SIZE)
-                .time_to_live(DEFAULT_CACHE_TTL)
-                .build(),
+            cache: Cache::new(ttl_opt.unwrap_or(DEFAULT_CACHE_TTL)),
         }
+    }
+
+    pub fn builder() -> JwksClientBuilder<T> {
+        JwksClientBuilder::new()
     }
 
     /// Retrieves the key from the cache, if not found it fetches it from the provided `source`.
     /// If the key is not found after fetching it, returns an error.
     pub async fn get(&self, key_id: String) -> Result<JsonWebKey, JwksClientError> {
-        let source = self.source.clone();
+        let source: Arc<T> = self.source.clone();
 
-        let key = self
+        let key: JsonWebKey = self
             .cache
-            .get_or_try_insert_with(key_id.clone(), async move {
-                source.fetch_keys().await?.take_key(&key_id)
-            })
+            .get_or_refresh(&key_id, async move { source.fetch_keys().await })
             .await?;
 
         Ok(key)
@@ -72,10 +71,10 @@ impl<T: JwksSource + Send + Sync + 'static> JwksClient<T> {
         token: &str,
         audience: &[impl ToString],
     ) -> Result<O, JwksClientError> {
-        let header = jsonwebtoken::decode_header(token)?;
+        let header: Header = jsonwebtoken::decode_header(token)?;
 
         if let Some(kid) = header.kid {
-            let key = self.get(kid).await?;
+            let key: JsonWebKey = self.get(kid).await?;
 
             let mut validation = if let Some(alg) = key.alg() {
                 Validation::new(Algorithm::from_str(alg)?)
@@ -89,7 +88,7 @@ impl<T: JwksSource + Send + Sync + 'static> JwksClient<T> {
 
             match key {
                 JsonWebKey::Rsa(jwk) => {
-                    let decoding_key =
+                    let decoding_key: DecodingKey =
                         DecodingKey::from_rsa_components(jwk.modulus(), jwk.exponent())?;
                     // Can this block the current thread? (should I spawn_blocking?)
                     Ok(jsonwebtoken::decode(token, &decoding_key, &validation)?.claims)
@@ -103,6 +102,8 @@ impl<T: JwksSource + Send + Sync + 'static> JwksClient<T> {
 
 #[cfg(test)]
 mod test {
+    use std::time::Duration;
+
     use httpmock::prelude::*;
     use jsonwebtoken::{Algorithm, EncodingKey, Header};
     use serde_json::{json, Value};
@@ -131,9 +132,77 @@ mod test {
 
         let url: Url = Url::parse(&server.url(path)).unwrap();
         let source: WebSource = WebSource::builder().build(url).unwrap();
-        let client: JwksClient<WebSource> = JwksClient::new(source);
+        let client: JwksClient<WebSource> = JwksClient::new(source, None);
 
         assert!(client.get(kid.to_string()).await.is_ok());
+        mock.assert();
+    }
+
+    #[tokio::test]
+    async fn get_key_after_expiration_should_update() {
+        let server = MockServer::start();
+        let path: &str = "/keys";
+        let kid: &str = "go14h7EBWUvPRncjniI_2";
+
+        let mut mock = server.mock(|when, then| {
+            when.method(GET).path(path);
+
+            then.status(200)
+                .header("content-type", "application/json")
+                .json_body(jwks_endpoint_response(kid));
+        });
+
+        let url: Url = Url::parse(&server.url(path)).unwrap();
+        let source: WebSource = WebSource::builder().build(url).unwrap();
+        let ttl_opt: Option<Duration> = Some(Duration::from_millis(1));
+        let client: JwksClient<WebSource> = JwksClient::new(source, ttl_opt);
+
+        let result_key_1 = client.get(kid.to_string()).await;
+        assert!(result_key_1.is_ok());
+        let x5t_1: String = result_key_1.unwrap().x5t().unwrap();
+
+        mock.assert();
+        mock.delete();
+
+        // This test that if the key is expired a new call to remote endpoint is performed.
+
+        // Give time to let the keys expire
+        std::thread::sleep(Duration::from_millis(2));
+
+        let mut mock = server.mock(|when, then| {
+            when.method(GET).path(path);
+
+            then.status(200)
+                .header("content-type", "application/json")
+                .json_body(jwks_endpoint_response(kid));
+        });
+
+        let result_key_2 = client.get(kid.to_string()).await;
+        assert!(result_key_2.is_ok());
+        let x5t_2: String = result_key_2.unwrap().x5t().unwrap();
+
+        assert_ne!(x5t_1, x5t_2);
+
+        mock.assert();
+        mock.delete();
+
+        // This test that if the key is expired but the remote call fails the value is
+        // still the same
+
+        // Give time to let the keys expire
+        std::thread::sleep(Duration::from_millis(2));
+
+        let mock = server.mock(|when, then| {
+            when.method(GET).path(path);
+            then.status(400).body("Error");
+        });
+
+        let result_key_3 = client.get(kid.to_string()).await;
+        assert!(result_key_3.is_ok());
+        let x5t_3: String = result_key_3.unwrap().x5t().unwrap();
+
+        assert_eq!(x5t_2, x5t_3);
+
         mock.assert();
     }
 
@@ -151,7 +220,7 @@ mod test {
 
         let url: Url = Url::parse(&server.url(path)).unwrap();
         let source: WebSource = WebSource::builder().build(url).unwrap();
-        let client: JwksClient<WebSource> = JwksClient::new(source);
+        let client: JwksClient<WebSource> = JwksClient::new(source, None);
 
         let result = client.get(kid.to_string()).await;
         assert!(result.is_err());
@@ -183,7 +252,7 @@ mod test {
 
         let url: Url = Url::parse(&server.url(path)).unwrap();
         let source: WebSource = WebSource::builder().build(url).unwrap();
-        let client: JwksClient<WebSource> = JwksClient::new(source);
+        let client: JwksClient<WebSource> = JwksClient::new(source, None);
 
         let result = client.get(kid.to_string()).await;
         assert!(result.is_err());
@@ -203,7 +272,7 @@ mod test {
     #[tokio::test]
     async fn decode_missing_kid_in_header() {
         let source = crate::source::MockJwksSource::new();
-        let client = JwksClient::new(source);
+        let client = JwksClient::new(source, None);
 
         // pem generated using: ssh-keygen -t rsa -b 4096 -m PEM -f jwtRS256.key
         let encoding_key = EncodingKey::from_rsa_pem(
@@ -304,7 +373,7 @@ SQ1D7EfH/F2wy7Sj9YrRqTIgxk+gmk5T9d/iNwhIFdMnWRBQpt6h1H0T4t0WTA==
                   "n": MODULUS,
                   "e": EXPONENT,
                   "kid": kid,
-                  "x5t": "dfrlEXMuWrPaCbmIrpXaiwNjFf4",
+                  "x5t": random_string(),
                   "x5c": [
                     "MIIDDTCCAfWgAwIBAgIJWUyDuZMhkTwpMA0GCSqGSIb3DQEBCwUAMCQxIjAgBgNVBAMTGWRldi1mOHJkejF3dy5ldS5hdXRoMC5jb20wHhcNMjEwOTA2MDkxODQ0WhcNMzUwNTE2MDkxODQ0WjAkMSIwIAYDVQQDExlkZXYtZjhyZHoxd3cuZXUuYXV0aDAuY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqjNzuylUQpyU9qX3/bMGpiRUO1G/xKbB0fyqQy0naETviHIqPS2D3lGcfK9XIFLZOq1O7K2KRXEE5nSDTf+S9qc0nPRkS38CXK4DBKPTBXtjufLK3e9lN9dh8Ehazx8xNmdCc6aocVKKlamOJv7Qr/UgmoFllq7W+UQ0YK2qfN8WgqxOQUPrss+40RWslCAKpjZmMOpIpRXQLGmR+GGZUdQZXnTUhnhRyDz5VcXHH++o1PkH/F0rlabMxgNFfsCIWKWbGy8G89bNrvoeVKq15QPCeaGBV13f2Do6XHGt0l2M3eYz85wyz1pISvjQuR4PrtJr6VsuHz3Puh/KgY8GqQIDAQABo0IwQDAPBgNVHRMBAf8EBTADAQH/MB0GA1UdDgQWBBQ1uIfkGnNThAvMeJzxnOYxn+w5iDAOBgNVHQ8BAf8EBAMCAoQwDQYJKoZIhvcNAQELBQADggEBADE2QQ3SL4mMIzF4Y63TI+KfD9TOQGSqxmavU5jMYhzlDsQpSR8CyK4Nl6wgVNJuESeXCNcOdBTtViQJ5PmUPkEaswCfI2qufWM44tKkKNhKdgh15Dzq6e0LK8oeadA6OdADnz9QvTaHU7VIxpi2swJEPtlmMb58wkkVhxLAtVtLNp90fbE0EQstBbQWcgodjOOQXmOJlCyIOCmvkBcbUkQSXt66Yn/GTU2jvco0U5yBzLHSOANSfi5GQIdzlSNFmdbq057Zc/GivQAEL4adPQPHeAgDZvnarvX+UqU8lp/yuNOycJ24SRnRTcCqeNB0kjybYLTgOedv/E6D2RGvF2E="
                   ]
@@ -312,5 +381,14 @@ SQ1D7EfH/F2wy7Sj9YrRqTIgxk+gmk5T9d/iNwhIFdMnWRBQpt6h1H0T4t0WTA==
               ]
             }
         )
+    }
+
+    fn random_string() -> String {
+        use rand::{distributions::Alphanumeric, Rng};
+        rand::thread_rng()
+            .sample_iter(&Alphanumeric)
+            .take(7)
+            .map(char::from)
+            .collect()
     }
 }
