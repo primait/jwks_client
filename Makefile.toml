@@ -60,8 +60,8 @@ script = [
     set -e
     set -x
     find ./target/debug -type f -maxdepth 1 -delete || true
-    rm -rfv ./target/{debug,release}/deps/{*prima_bridge*,*decode_key*,*gen_public_key*,*intermediari_importer*,*migrate*,*rabbit_worker*,*seed*}
-    rm -rfv ./target/{debug,release}/.fingerprint/*prima_bridge*
+    rm -rfv ./target/{debug,release}/deps/{*jwks_client*}
+    rm -rfv ./target/{debug,release}/.fingerprint/*jwks_client*
     '''
 ]
 
