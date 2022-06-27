@@ -61,7 +61,7 @@ let result: Result<Claims, JwksClientError> = client.decode::<Claims>(token, aud
 ## Example
 
 A working example could be found in [examples](./examples) folder. To run the example:
-- Export the `KID` env variable (take if from your tenant well known jwks)
+- Export the `KID` env variable (take it from your tenant well known jwks)
 - Export the `BASE_AUTH0_URL` (by running [localauth0](https://github.com/primait/localauth0) or using your 
   auth0 tenant; the url should be your localauth0 exposed port on `localhost` or something like 
   `https://{your-tenant}.eu.auth0.com`)
