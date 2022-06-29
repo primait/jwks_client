@@ -9,10 +9,13 @@ use jwks_client_rs::{JsonWebKey, JwksClient, JwksClientError};
 #[tokio::main]
 async fn main() {
     // This value must be set as one of your tenant key id (in the json: "keys"[0]."kid")
-    // export KID={YOUR-KID}
+    // $ export KID={YOUR-KID}
     let kid: String = std::env::var("KID").unwrap();
     // This should be something like
-    // export AUTH0_BASE_URL=https://{YOUR-TENANT}.eu.auth0.com
+    // $ export AUTH0_BASE_URL=https://{YOUR-TENANT}.eu.auth0.com
+    // or running localauth0
+    // $ docker run -d -p 3000:3000 public.ecr.aws/prima/localauth0:0.3.0
+    // $ export AUTH0_BASE_URL=http://localhost:3000
     let url_string: String = std::env::var("AUTH0_BASE_URL").unwrap();
 
     let url: Url = Url::from_str(url_string.as_str()).unwrap();

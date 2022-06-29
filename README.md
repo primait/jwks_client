@@ -10,7 +10,7 @@ Add to your `Cargo.toml`
 ```toml
 # Cargo.toml
 [dependencies]
-jwks_client_rs = "0.1.1"
+jwks_client_rs = "0.3.0"
 ```
 
 ## Code example
@@ -27,8 +27,10 @@ let timeout: std::time::Duration = todo!();
 let source: WebSource = WebSource::builder()
     .with_timeout(timeout)
     .with_connect_timeout(timeout)
-    .build(url); 
-let client: JwksClient = JwksClient::new(source);
+    .build(url);
+
+let client: JwksClient<WebSource> = JwksClient::builder()
+    .build(source);
 
 // Store your client in your application context or whatever
 // ..
@@ -58,7 +60,9 @@ let result: Result<Claims, JwksClientError> = client.decode::<Claims>(token, aud
 
 ## Example
 
-To run the example:
-- Export the `KID` env variable (take if from your tenant well known jwks)
-- Export the `BASE_AUTH0_URL` (something like `http://{your-tenant}.eu.auth0.com`)
-- Run in shell `cargo run --bin get_jwks`
+A working example could be found in [examples](./examples) folder. To run the example:
+- Export the `KID` env variable (take it from your tenant well known jwks)
+- Export the `BASE_AUTH0_URL` (by running [localauth0](https://github.com/primait/localauth0) or using your 
+  auth0 tenant; the url should be your localauth0 exposed port on `localhost` or something like 
+  `https://{your-tenant}.eu.auth0.com`)
+- Run in shell `cargo run --example get_jwks`
