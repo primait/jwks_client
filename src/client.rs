@@ -43,12 +43,12 @@ impl<T: JwksSource + Send + Sync + 'static> JwksClient<T> {
 
     /// Retrieves the key from the cache, if not found it fetches it from the provided `source`.
     /// If the key is not found after fetching it, returns an error.
-    pub async fn get(&self, key_id: String) -> Result<JsonWebKey, JwksClientError> {
+    pub async fn get(&self, key_id: &str) -> Result<JsonWebKey, JwksClientError> {
         let source: Arc<T> = self.source.clone();
 
         let key: JsonWebKey = self
             .cache
-            .get_or_refresh(&key_id, async move { source.fetch_keys().await })
+            .get_or_refresh(key_id, async move { source.fetch_keys().await })
             .await?;
 
         Ok(key)
@@ -56,7 +56,7 @@ impl<T: JwksSource + Send + Sync + 'static> JwksClient<T> {
 
     /// Retrieves the key from the cache, if not found it fetches it from the provided `source`.
     /// If the key is not found after fetching it, returns Ok(None).
-    pub async fn get_opt(&self, key_id: String) -> Result<Option<JsonWebKey>, JwksClientError> {
+    pub async fn get_opt(&self, key_id: &str) -> Result<Option<JsonWebKey>, JwksClientError> {
         match self.get(key_id).await {
             Ok(res) => Ok(Some(res)),
             Err(error) => Err(error),
@@ -73,7 +73,7 @@ impl<T: JwksSource + Send + Sync + 'static> JwksClient<T> {
     ) -> Result<O, JwksClientError> {
         let header: Header = jsonwebtoken::decode_header(token)?;
 
-        if let Some(kid) = header.kid {
+        if let Some(kid) = header.kid.as_ref() {
             let key: JsonWebKey = self.get(kid).await?;
 
             let mut validation = if let Some(alg) = key.alg() {
@@ -134,7 +134,7 @@ mod test {
         let source: WebSource = WebSource::builder().build(url).unwrap();
         let client: JwksClient<WebSource> = JwksClient::new(source, None);
 
-        assert!(client.get(kid.to_string()).await.is_ok());
+        assert!(client.get(kid).await.is_ok());
         mock.assert();
     }
 
@@ -157,7 +157,7 @@ mod test {
         let ttl_opt: Option<Duration> = Some(Duration::from_millis(1));
         let client: JwksClient<WebSource> = JwksClient::new(source, ttl_opt);
 
-        let result_key_1 = client.get(kid.to_string()).await;
+        let result_key_1 = client.get(kid).await;
         assert!(result_key_1.is_ok());
         let x5t_1: String = result_key_1.unwrap().x5t().unwrap();
 
@@ -177,7 +177,7 @@ mod test {
                 .json_body(jwks_endpoint_response(kid));
         });
 
-        let result_key_2 = client.get(kid.to_string()).await;
+        let result_key_2 = client.get(kid).await;
         assert!(result_key_2.is_ok());
         let x5t_2: String = result_key_2.unwrap().x5t().unwrap();
 
@@ -197,7 +197,7 @@ mod test {
             then.status(400).body("Error");
         });
 
-        let result_key_3 = client.get(kid.to_string()).await;
+        let result_key_3 = client.get(kid).await;
         assert!(result_key_3.is_ok());
         let x5t_3: String = result_key_3.unwrap().x5t().unwrap();
 
@@ -222,7 +222,7 @@ mod test {
         let source: WebSource = WebSource::builder().build(url).unwrap();
         let client: JwksClient<WebSource> = JwksClient::new(source, None);
 
-        let result = client.get(kid.to_string()).await;
+        let result = client.get(kid).await;
         assert!(result.is_err());
         match result.err().unwrap() {
             JwksClientError::Error(err) => match *err {
@@ -254,7 +254,7 @@ mod test {
         let source: WebSource = WebSource::builder().build(url).unwrap();
         let client: JwksClient<WebSource> = JwksClient::new(source, None);
 
-        let result = client.get(kid.to_string()).await;
+        let result = client.get(kid).await;
         assert!(result.is_err());
 
         match result.err().unwrap() {
