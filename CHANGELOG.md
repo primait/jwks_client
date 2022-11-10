@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - README code example updated with the latest changes.
+- #11 - avoid require owned string as params in getters 
 
 ## [0.3.0] - 2022-04-01
 
