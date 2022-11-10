@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - README code example updated with the latest changes.
-- [#11](https://github.com/primait/jwks_client/issues/11) - avoid require owned string as params in getters 
+- *BREAKING* [#11](https://github.com/primait/jwks_client/issues/11) - avoid require owned string as params in getters 
 
 ## [0.3.0] - 2022-04-01
 
