@@ -36,8 +36,8 @@ impl Cache {
         F: Future<Output = Result<JsonWebKeySet, Error>> + Send + 'static,
     {
         let read: RwLockReadGuard<Entry> = self.inner.read().await;
-        let is_entry_expired: bool = (*read).is_expired();
-        let get_key_result: Result<JsonWebKey, Error> = (*read).set.get_key(key).cloned();
+        let is_entry_expired: bool = read.is_expired();
+        let get_key_result: Result<JsonWebKey, Error> = read.set.get_key(key).cloned();
         // Drop RwLock read guard prematurely to be able to write in the lock
         drop(read);
 
@@ -68,7 +68,7 @@ impl Cache {
             self.refreshed.store(true, Ordering::SeqCst);
             Ok(set)
         } else {
-            Ok((*guard).set.clone())
+            Ok(guard.set.clone())
         }
         // we drop the write guard here so "refresh=true" for the other threads/tasks
     }
