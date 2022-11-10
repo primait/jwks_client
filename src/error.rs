@@ -1,4 +1,5 @@
 use std::sync::Arc;
+
 use jsonwebtoken::errors::ErrorKind;
 
 #[derive(thiserror::Error, Debug)]
@@ -33,15 +34,19 @@ impl From<jsonwebtoken::errors::Error> for JwksClientError {
 
 impl JwksClientError {
     pub fn is_jwt_expired(&self) -> bool {
-        match self { JwksClientError::Error(e) => { e.is_jwt_expired() } }
+        match self {
+            JwksClientError::Error(e) => e.is_jwt_expired(),
+        }
     }
 }
 
 impl Error {
     fn is_jwt_expired(&self) -> bool {
         match self {
-            Error::JsonWebToken(err) => { matches!(err.kind(), ErrorKind::ExpiredSignature) }
-            _ => false
+            Error::JsonWebToken(err) => {
+                matches!(err.kind(), ErrorKind::ExpiredSignature)
+            }
+            _ => false,
         }
     }
 }
