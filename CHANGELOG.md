@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+---
+
+## [0.4.0] - 2022-11-11
+
 ### Added
 
 - Is now possible to know if the error is caused by expired jwt (useful for refreshing purposes)
@@ -16,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - README code example updated with the latest changes.
 - *BREAKING* [#11](https://github.com/primait/jwks_client/issues/11) - avoid require owned string as params in getters 
+
+---
 
 ## [0.3.0] - 2022-04-01
 
@@ -28,6 +34,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 - Removed `JwksClient::new` function.
+
+---
 
 ## [0.2.0] - 2022-03-14
 
@@ -42,13 +50,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Changed cache TTL duration set from 1 minute to 1 day.
 
+---
+
 ## [0.1.0] - 2021-10-28
 
 ### Added
 
 - First release 🎉
 
-[Unreleased]: https://github.com/primait/jwks_client/compare/0.3.0...HEAD
+[Unreleased]: https://github.com/primait/jwks_client/compare/0.4.0...HEAD
+[0.4.0]: https://github.com/primait/jwks_client/compare/0.3.0...0.4.0
 [0.3.0]: https://github.com/primait/jwks_client/compare/0.2.0...0.3.0
 [0.2.0]: https://github.com/primait/jwks_client/compare/0.1.0...0.2.0
 [0.1.0]: https://github.com/primait/jwks_client/releases/tag/0.1.0
