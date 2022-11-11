@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Is now possible to know if the error is caused by expired jwt (useful for refreshing purposes)
+- Deps improvements
+
 ### Fixed
 
 - README code example updated with the latest changes.
