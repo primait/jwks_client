@@ -28,6 +28,7 @@ impl WebSource {
 
 #[async_trait]
 impl JwksSource for WebSource {
+    #[tracing::instrument(skip(self), fields(url = %self.url))]
     async fn fetch_keys(&self) -> Result<JsonWebKeySet, Error> {
         let request: Request = self.client.get(self.url.clone()).build()?;
         let keys: JsonWebKeySet = self
