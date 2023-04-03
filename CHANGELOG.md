@@ -9,11 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [0.4.0] - 2022-11-11
+## [0.4.1] - 2023-04-03
 
 ### Added
 
-- [#16](https://github.com/primait/jwks_client/pull/16) Add instrumentation of fetch_keys function.
+- [[#16](https://github.com/primait/jwks_client/pull/16)] Add instrumentation of fetch_keys function.
 
 ---
 
@@ -27,7 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - README code example updated with the latest changes.
-- *BREAKING* [#11](https://github.com/primait/jwks_client/issues/11) - avoid require owned string as params in getters 
+- *BREAKING* [[#11](https://github.com/primait/jwks_client/issues/11)] - avoid require owned string as params in getters 
 
 ---
 
