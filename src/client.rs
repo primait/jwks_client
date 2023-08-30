@@ -93,6 +93,12 @@ impl<T: JwksSource + Send + Sync + 'static> JwksClient<T> {
                     // Can this block the current thread? (should I spawn_blocking?)
                     Ok(jsonwebtoken::decode(token, &decoding_key, &validation)?.claims)
                 }
+                JsonWebKey::Ec(jwk) => {
+                    let decoding_key: DecodingKey =
+                        DecodingKey::from_ec_components(jwk.x(), jwk.y())?;
+                   
+                    Ok(jsonwebtoken::decode(token, &decoding_key, &validation)?.claims)
+                },
             }
         } else {
             Err(Error::MissingKid.into())

@@ -12,6 +12,8 @@ pub enum Error {
     JsonWebToken(#[from] jsonwebtoken::errors::Error),
     #[error("Missing Kid value in the JWT token header")]
     MissingKid,
+    #[error("The operation is not supported for this key type: {0}")]
+    InvalidOperation(String),
 }
 
 #[derive(thiserror::Error, Debug)]
