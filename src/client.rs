@@ -96,9 +96,9 @@ impl<T: JwksSource + Send + Sync + 'static> JwksClient<T> {
                 JsonWebKey::Ec(jwk) => {
                     let decoding_key: DecodingKey =
                         DecodingKey::from_ec_components(jwk.x(), jwk.y())?;
-                   
+
                     Ok(jsonwebtoken::decode(token, &decoding_key, &validation)?.claims)
-                },
+                }
             }
         } else {
             Err(Error::MissingKid.into())
