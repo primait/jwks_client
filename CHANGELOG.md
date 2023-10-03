@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [[#16](https://github.com/primait/jwks_client/pull/16)] Add instrumentation of fetch_keys function.
 
+### Changed
+
+- MSRV bumped to 1.67
+
 ---
 
 ## [0.4.0] - 2022-11-11

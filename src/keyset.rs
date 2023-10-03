@@ -39,24 +39,36 @@ impl JsonWebKeySet {
 pub enum JsonWebKey {
     #[serde(alias = "RSA")]
     Rsa(RsaPublicJwk),
+    #[serde(alias = "EC")]
+    Ec(EcPublicJwk),
 }
 
 impl JsonWebKey {
     pub fn key_id(&self) -> &str {
         match self {
             JsonWebKey::Rsa(rsa_pk) => rsa_pk.key_id(),
+            JsonWebKey::Ec(ec_pk) => ec_pk.key_id(),
         }
     }
 
     pub fn alg(&self) -> Option<&str> {
         match self {
             JsonWebKey::Rsa(rsa_pk) => rsa_pk.algorithm(),
+            JsonWebKey::Ec(ec_pk) => ec_pk.algorithm(),
         }
     }
 
     pub fn as_rsa_public_key(&self) -> Result<&RsaPublicJwk, Error> {
         match self {
             JsonWebKey::Rsa(rsa_pk) => Ok(rsa_pk),
+            JsonWebKey::Ec(_ec_pk) => Err(Error::InvalidOperation("EC".to_string())),
+        }
+    }
+
+    pub fn as_ec_public_key(&self) -> Result<&EcPublicJwk, Error> {
+        match self {
+            JsonWebKey::Rsa(_rsa_pk) => Err(Error::InvalidOperation("RSA".to_string())),
+            JsonWebKey::Ec(ec_pk) => Ok(ec_pk),
         }
     }
 
@@ -64,6 +76,7 @@ impl JsonWebKey {
     pub fn x5t(&self) -> Option<String> {
         match self {
             JsonWebKey::Rsa(rsa_pk) => rsa_pk.x5t.clone(),
+            JsonWebKey::Ec(_ec_pk) => None,
         }
     }
 }
@@ -84,6 +97,20 @@ pub struct RsaPublicJwk {
     modulus: String,
     #[serde(rename(deserialize = "e"))]
     exponent: String,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct EcPublicJwk {
+    #[serde(rename(deserialize = "alg"))]
+    algorithm: Option<String>,
+    #[serde(rename(deserialize = "kid"))]
+    key_id: String,
+    #[serde(rename(deserialize = "crv"))]
+    curve: String,
+    #[serde(rename(deserialize = "x"))]
+    x: String,
+    #[serde(rename(deserialize = "y"))]
+    y: String,
 }
 
 impl RsaPublicJwk {
@@ -109,6 +136,28 @@ impl RsaPublicJwk {
 
     pub fn certificates(&self) -> Option<&[String]> {
         self.certificates.as_deref()
+    }
+}
+
+impl EcPublicJwk {
+    pub fn key_id(&self) -> &str {
+        &self.key_id
+    }
+
+    pub fn algorithm(&self) -> Option<&str> {
+        self.algorithm.as_deref()
+    }
+
+    pub fn curve(&self) -> &str {
+        &self.curve
+    }
+
+    pub fn x(&self) -> &str {
+        &self.x
+    }
+
+    pub fn y(&self) -> &str {
+        &self.y
     }
 }
 
@@ -150,6 +199,35 @@ mod tests {
         assert_eq!("RS256", key.alg().unwrap());
 
         let _rsa_pk = key.as_rsa_public_key()?;
+
+        Ok(())
+    }
+
+    #[test]
+    fn deserialize_public_ec_key_set() -> Result<(), Box<dyn std::error::Error>> {
+        let keys = r#"
+        {
+          "keys": [
+            {
+              "alg": "ES256",
+              "kty": "EC",
+              "crv": "P-256",
+              "x": "LEBfQpwTDXJtLFiPcnYvGv-WaFXZGBnFP_yGhLL9MGc",
+              "y": "a1Or3ovkpH12b0o3ruZUtm_z8bg3xQtHXi-uPC7UJT0",
+              "kid": "test-key"
+            }
+          ]
+        }
+        "#;
+
+        let keyset: JsonWebKeySet = serde_json::from_str(keys)?;
+        let key = keyset.get_key("test-key")?;
+
+        assert_eq!("ES256", key.alg().unwrap());
+
+        let ec_pk = key.as_ec_public_key()?;
+        assert_eq!("LEBfQpwTDXJtLFiPcnYvGv-WaFXZGBnFP_yGhLL9MGc", ec_pk.x());
+        assert_eq!("a1Or3ovkpH12b0o3ruZUtm_z8bg3xQtHXi-uPC7UJT0", ec_pk.y());
 
         Ok(())
     }
