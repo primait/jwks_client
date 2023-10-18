@@ -14,7 +14,7 @@ rust-version = "1.67"
 [dependencies]
 async-trait = "0.1"
 tokio = { version = "1", features = ["sync"] }
-jsonwebtoken = "8.1"
+jsonwebtoken = "9.0"
 chrono = { version = "0.4", default-features = false, features = ["clock"] }
 reqwest = { version = "0.11", features = ["json"] }
 serde = { version = "1.0", features = ["derive"]}
