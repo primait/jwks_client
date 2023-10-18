@@ -1,0 +1,5 @@
+files:
+  - path: Cargo.toml
+    pattern: 'version = "{version}"'
+  - path: README.md
+    pattern: 'jwks_client_rs = "{version}"'

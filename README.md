@@ -10,7 +10,7 @@ Add to your `Cargo.toml`
 ```toml
 # Cargo.toml
 [dependencies]
-jwks_client_rs = "0.4"
+jwks_client_rs = "0.4.2"
 ```
 
 ## Code example

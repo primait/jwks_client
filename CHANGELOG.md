@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.4.2] - 2023-10-18
+
+### Added
+
+- Support elliptic curve keys
+
+### Changed 
+
+- Update jsonwebtoken to 9.0
+
+---
+
 ## [0.4.1] - 2023-04-03
 
 ### Added
@@ -70,7 +82,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - First release 🎉
 
-[Unreleased]: https://github.com/primait/jwks_client/compare/0.4.1...HEAD
+
+[Unreleased]: https://github.com/primait/jwks_client/compare/0.4.2...HEAD
+[0.4.2]: https://github.com/primait/jwks_client/compare/0.4.1...0.4.2
 [0.4.1]: https://github.com/primait/jwks_client/compare/0.4.0...0.4.1
 [0.4.0]: https://github.com/primait/jwks_client/compare/0.3.0...0.4.0
 [0.3.0]: https://github.com/primait/jwks_client/compare/0.2.0...0.3.0
