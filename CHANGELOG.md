@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Support elliptic curve keys
+
+### Changed 
+
+- Update jsonwebtoken to 9.0
+
 ---
 
 ## [0.4.1] - 2023-04-03
