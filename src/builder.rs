@@ -15,14 +15,14 @@ impl<T: JwksSource + Send + Sync + 'static> JwksClientBuilder<T> {
     pub(crate) fn new() -> Self {
         Self {
             ttl_opt: None,
-            t: PhantomData::default(),
+            t: PhantomData,
         }
     }
 
     pub fn time_to_live(&self, ttl: Duration) -> Self {
         Self {
             ttl_opt: Some(ttl),
-            t: PhantomData::default(),
+            t: PhantomData,
         }
     }
 
