@@ -12,15 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-        
       - uses: Swatinem/rust-cache@v2
-
-      - run: rustup target add wasm32-unknown-unknown
-      - name: install tools
-        uses: taiki-e/install-action@v2
-        with:
-          tool: trunk@0.17
-
       - name: Build
         run: cargo build --all-features
       - name: cargo fmt
@@ -29,8 +21,6 @@ jobs:
         run: cargo clippy --all-features -- -D warnings
       - name: Build docs
         run: cargo doc --document-private-items --all-features --no-deps
-      - name: Build web
-        run: trunk build web/index.html
     env:
       RUSTDOCFLAGS: -Dwarnings
   test:
