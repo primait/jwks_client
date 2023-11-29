@@ -12,70 +12,26 @@ args = [
     "@@split(CARGO_MAKE_CARGO_BUILD_TEST_FLAGS, )",
 ]
 
+[tasks.fmt-check]
+description = "Runs the cargo rustfmt plugin."
+command = "cargo"
+args = ["fmt", "--", "--check"]
+
 [tasks.test]
 command = "cargo"
-args = ["test", "${@}"]
+args = ["test", "${@}", "--all-features"]
 
 [tasks.clippy]
 command = "cargo"
-args = ["clippy", "--", "-D", "warnings"]
+args = ["clippy", "--all-features", "--all-targets", "--", "-D", "warnings"]
 
-[tasks.clean]
+[tasks.docs]
+description = "Build docs as they are rendered on docs.rs"
 command = "cargo"
-args = ["clean"]
+args = ["doc", "--document-private-items", "--all-features", "--no-deps"]
+env = { "RUSTDOCFLAGS" = "-Dwarnings" }
 
-[tasks.format-ci]
-description = "Runs the cargo rustfmt plugin during CI."
+[tasks.release]
+description = "Task to release the package to crates.io"
 command = "cargo"
-args = ["fmt", "--all", "--", "--check"]
-
-[tasks.clippy-ci]
-command = "cargo"
-args = ["clippy", "--", "-D", "warnings"]
-
-[tasks.build-ci]
-description = "Build inside CI."
-command = "cargo"
-args = ["build", "-j", "2", "--all-features"]
-
-[tasks.cache-cleanup]
-description = "Clean CI cache"
-dependencies = ["cargo-prune", "sweep", "delete-artifacts"]
-
-[tasks.sweep]
-description = "Clean cargo cache with sweep"
-command = "cargo sweep -t 10"
-ignore_errors = true
-
-[tasks.cargo-prune]
-description = "Run cargo prune"
-command = "cargo"
-args = ["prune"]
-
-[tasks.delete-artifacts]
-description = "Remove non cachable artifacts"
-script = [
-    '''
-    #!/bin/bash
-    set -e
-    set -x
-    find ./target/debug -type f -maxdepth 1 -delete || true
-    rm -rfv ./target/{debug,release}/deps/{*jwks_client*}
-    rm -rfv ./target/{debug,release}/.fingerprint/*jwks_client*
-    '''
-]
-
-[tasks.sweep-start]
-description = "Start cargo sweep"
-command = "cargo"
-args = ["sweep", "-s"]
-
-[tasks.sweep-end]
-description = "Run cargo sweep cleanup"
-command = "cargo"
-args = ["sweep", "-f"]
-
-[tasks.print-stats]
-description = "Print cache size"
-command = "du"
-args = ["-sh", "target", ".cargo"]
+args = ["release", "publish", "--no-confirm", "--allow-branch \"*\"", "--all-features", "--execute"]
