@@ -35,7 +35,7 @@ async fn main() {
     let result: Result<JsonWebKey, JwksClientError> = client.get("unknown").await;
     println!(
         "Get with kid \"unknown\": {}",
-        result.unwrap_err().to_string()
+        result.unwrap_err()
     );
 
     // The provided kid (assuming is the same you got from your tenant) is valid and could be found.
