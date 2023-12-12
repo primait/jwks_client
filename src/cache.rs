@@ -7,9 +7,8 @@ use chrono::{Duration, Utc};
 use tokio::sync::RwLock;
 use tokio::sync::{RwLockReadGuard, RwLockWriteGuard};
 
-use crate::error::Error;
 use crate::keyset::JsonWebKeySet;
-use crate::JsonWebKey;
+use crate::{JsonWebKey, JwksClientError};
 
 #[derive(Clone)]
 pub struct Cache {
@@ -31,13 +30,17 @@ impl Cache {
         }
     }
 
-    pub async fn get_or_refresh<F>(&self, key: &str, future: F) -> Result<JsonWebKey, Error>
+    pub async fn get_or_refresh<F>(
+        &self,
+        key: &str,
+        future: F,
+    ) -> Result<JsonWebKey, JwksClientError>
     where
-        F: Future<Output = Result<JsonWebKeySet, Error>> + Send + 'static,
+        F: Future<Output = Result<JsonWebKeySet, JwksClientError>> + Send + 'static,
     {
         let read: RwLockReadGuard<Entry> = self.inner.read().await;
         let is_entry_expired: bool = read.is_expired();
-        let get_key_result: Result<JsonWebKey, Error> = read.set.get_key(key).cloned();
+        let get_key_result: Result<JsonWebKey, JwksClientError> = read.set.get_key(key).cloned();
         // Drop RwLock read guard prematurely to be able to write in the lock
         drop(read);
 
@@ -55,9 +58,9 @@ impl Cache {
         }
     }
 
-    async fn try_refresh<F>(&self, future: F) -> Result<JsonWebKeySet, Error>
+    async fn try_refresh<F>(&self, future: F) -> Result<JsonWebKeySet, JwksClientError>
     where
-        F: Future<Output = Result<JsonWebKeySet, Error>> + Send + 'static,
+        F: Future<Output = Result<JsonWebKeySet, JwksClientError>> + Send + 'static,
     {
         self.refreshed.store(false, Ordering::SeqCst);
         let mut guard: RwLockWriteGuard<Entry> = self.inner.write().await;
