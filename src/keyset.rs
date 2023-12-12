@@ -2,11 +2,17 @@
 
 use serde::Deserialize;
 
-use crate::error::Error;
+use crate::{error::Error, JwksClientError};
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct JsonWebKeySet {
     keys: Vec<JsonWebKey>,
+}
+
+impl From<Vec<JsonWebKey>> for JsonWebKeySet {
+    fn from(keys: Vec<JsonWebKey>) -> Self {
+        Self { keys }
+    }
 }
 
 impl JsonWebKeySet {
@@ -14,18 +20,18 @@ impl JsonWebKeySet {
         Self { keys: vec![] }
     }
 
-    pub fn get_key(&self, key_id: &str) -> Result<&JsonWebKey, Error> {
+    pub fn get_key(&self, key_id: &str) -> Result<&JsonWebKey, JwksClientError> {
         self.keys
             .iter()
             .find(|key| key.key_id() == key_id)
-            .ok_or_else(|| Error::KeyNotFound(key_id.to_string()))
+            .ok_or_else(|| Error::KeyNotFound(key_id.to_string()).into())
     }
 
-    pub fn take_key(self, key_id: &str) -> Result<JsonWebKey, Error> {
+    pub fn take_key(self, key_id: &str) -> Result<JsonWebKey, JwksClientError> {
         self.keys
             .into_iter()
             .find(|key| key.key_id() == key_id)
-            .ok_or_else(|| Error::KeyNotFound(key_id.to_string()))
+            .ok_or_else(|| Error::KeyNotFound(key_id.to_string()).into())
     }
 
     pub fn keys(self) -> Vec<JsonWebKey> {

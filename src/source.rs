@@ -5,6 +5,7 @@ use reqwest::{Request, Url};
 
 use crate::error::Error;
 use crate::keyset::JsonWebKeySet;
+use crate::JwksClientError;
 
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(20);
 const TIMEOUT: Duration = Duration::from_secs(10);
@@ -12,7 +13,7 @@ const TIMEOUT: Duration = Duration::from_secs(10);
 #[cfg_attr(test, mockall::automock)]
 #[async_trait]
 pub trait JwksSource {
-    async fn fetch_keys(&self) -> Result<JsonWebKeySet, Error>;
+    async fn fetch_keys(&self) -> Result<JsonWebKeySet, JwksClientError>;
 }
 
 pub struct WebSource {
@@ -29,18 +30,22 @@ impl WebSource {
 #[async_trait]
 impl JwksSource for WebSource {
     #[tracing::instrument(skip(self), fields(url = %self.url))]
-    async fn fetch_keys(&self) -> Result<JsonWebKeySet, Error> {
-        let request: Request = self.client.get(self.url.clone()).build()?;
-        let keys: JsonWebKeySet = self
-            .client
-            .execute(request)
-            .await?
-            .error_for_status()?
-            .json()
-            .await?;
-
-        Ok(keys)
+    async fn fetch_keys(&self) -> Result<JsonWebKeySet, JwksClientError> {
+        fetch_keys(self).await.map_err(JwksClientError::from)
     }
+}
+
+async fn fetch_keys(source: &WebSource) -> Result<JsonWebKeySet, Error> {
+    let request: Request = source.client.get(source.url.clone()).build()?;
+    let keys: JsonWebKeySet = source
+        .client
+        .execute(request)
+        .await?
+        .error_for_status()?
+        .json()
+        .await?;
+
+    Ok(keys)
 }
 
 pub struct WebSourceBuilder {
