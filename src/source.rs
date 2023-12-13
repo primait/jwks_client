@@ -25,6 +25,10 @@ impl WebSource {
     pub fn builder() -> WebSourceBuilder {
         WebSourceBuilder::new()
     }
+
+    pub fn url(&self) -> &Url {
+        &self.url
+    }
 }
 
 #[async_trait]
