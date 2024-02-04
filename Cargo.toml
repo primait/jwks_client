@@ -11,12 +11,18 @@ rust-version = "1.67"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+default = ["default-tls"]
+default-tls = ["reqwest/default-tls"]
+native-tls = ["reqwest/native-tls"]
+rustls-tls = ["reqwest/rustls-tls"]
+
 [dependencies]
 async-trait = "0.1"
 tokio = { version = "1", features = ["sync"] }
 jsonwebtoken = "9.0"
 chrono = { version = "0.4", default-features = false, features = ["clock"] }
-reqwest = { version = "0.11", features = ["json"] }
+reqwest = { version = "0.11", default-features = false, features = ["json"] }
 serde = { version = "1.0", features = ["derive"]}
 serde_json = "1.0"
 thiserror = "1.0"
