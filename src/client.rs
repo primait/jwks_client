@@ -390,8 +390,8 @@ SQ1D7EfH/F2wy7Sj9YrRqTIgxk+gmk5T9d/iNwhIFdMnWRBQpt6h1H0T4t0WTA==
     }
 
     fn random_string() -> String {
-        use rand::{distributions::Alphanumeric, Rng};
-        rand::thread_rng()
+        use rand::{distr::Alphanumeric, Rng};
+        rand::rng()
             .sample_iter(&Alphanumeric)
             .take(7)
             .map(char::from)
