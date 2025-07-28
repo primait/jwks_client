@@ -71,7 +71,7 @@ impl JsonWebKey {
     pub fn as_rsa_public_key(&self) -> Result<&RsaPublicJwk, Error> {
         match self {
             JsonWebKey::Rsa(rsa_pk) => Ok(rsa_pk),
-            _ => Err(Error::InvalidOperation("RDS".to_string())),
+            _ => Err(Error::InvalidOperation("RSA".to_string())),
         }
     }
 
