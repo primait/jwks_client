@@ -100,8 +100,7 @@ impl<T: JwksSource + Send + Sync + 'static> JwksClient<T> {
                     Ok(jsonwebtoken::decode(token, &decoding_key, &validation)?.claims)
                 }
                 JsonWebKey::Okp(jwk) => {
-                    let decoding_key: DecodingKey =
-                        DecodingKey::from_ed_components(jwk.x())?;
+                    let decoding_key: DecodingKey = DecodingKey::from_ed_components(jwk.x())?;
 
                     Ok(jsonwebtoken::decode(token, &decoding_key, &validation)?.claims)
                 }
