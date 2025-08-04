@@ -239,7 +239,7 @@ mod test {
             JwksClientError::Error(err) => match *err {
                 Error::Reqwest(_) => {}
                 _ => {
-                    eprintln!("{}", err);
+                    eprintln!("{err}");
                     unreachable!()
                 }
             },
@@ -272,7 +272,7 @@ mod test {
             JwksClientError::Error(err) => match *err {
                 Error::KeyNotFound(ref key_id) => assert_eq!(kid, key_id),
                 _ => {
-                    eprintln!("{}", err);
+                    eprintln!("{err}");
                     unreachable!()
                 }
             },
@@ -367,7 +367,7 @@ SQ1D7EfH/F2wy7Sj9YrRqTIgxk+gmk5T9d/iNwhIFdMnWRBQpt6h1H0T4t0WTA==
             JwksClientError::Error(err) => match *err {
                 Error::MissingKid => {}
                 _ => {
-                    eprintln!("{}", err);
+                    eprintln!("{err}");
                     unreachable!()
                 }
             },
