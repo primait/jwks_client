@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.5.2] - 2025-08-11
+
+### Added
+
+- Support for EdDSA (thanks @jhart0)
+
+---
+
 ## [0.5.1] - 2024-04-17
 
 ### Changed
@@ -101,7 +109,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
-[Unreleased]: https://github.com/primait/jwks_client/compare/0.5.1...HEAD
+
+[Unreleased]: https://github.com/primait/jwks_client/compare/0.5.2...HEAD
+[0.5.2]: https://github.com/primait/jwks_client/compare/0.5.1...0.5.2
 [0.5.1]: https://github.com/primait/jwks_client/compare/0.5.0...0.5.1
 [0.5.0]: https://github.com/primait/jwks_client/compare/0.4.2...0.5.0
 [0.4.2]: https://github.com/primait/jwks_client/compare/0.4.1...0.4.2
