@@ -47,6 +47,8 @@ pub enum JsonWebKey {
     Rsa(RsaPublicJwk),
     #[serde(alias = "EC")]
     Ec(EcPublicJwk),
+    #[serde(alias = "OKP")]
+    Okp(OkpPublicJwk),
 }
 
 impl JsonWebKey {
@@ -54,6 +56,7 @@ impl JsonWebKey {
         match self {
             JsonWebKey::Rsa(rsa_pk) => rsa_pk.key_id(),
             JsonWebKey::Ec(ec_pk) => ec_pk.key_id(),
+            JsonWebKey::Okp(okp_pk) => okp_pk.key_id(),
         }
     }
 
@@ -61,20 +64,28 @@ impl JsonWebKey {
         match self {
             JsonWebKey::Rsa(rsa_pk) => rsa_pk.algorithm(),
             JsonWebKey::Ec(ec_pk) => ec_pk.algorithm(),
+            JsonWebKey::Okp(okp_pk) => okp_pk.algorithm(),
         }
     }
 
     pub fn as_rsa_public_key(&self) -> Result<&RsaPublicJwk, Error> {
         match self {
             JsonWebKey::Rsa(rsa_pk) => Ok(rsa_pk),
-            JsonWebKey::Ec(_ec_pk) => Err(Error::InvalidOperation("EC".to_string())),
+            _ => Err(Error::InvalidOperation("RSA".to_string())),
         }
     }
 
     pub fn as_ec_public_key(&self) -> Result<&EcPublicJwk, Error> {
         match self {
-            JsonWebKey::Rsa(_rsa_pk) => Err(Error::InvalidOperation("RSA".to_string())),
             JsonWebKey::Ec(ec_pk) => Ok(ec_pk),
+            _ => Err(Error::InvalidOperation("EC".to_string())),
+        }
+    }
+
+    pub fn as_okp_public_key(&self) -> Result<&OkpPublicJwk, Error> {
+        match self {
+            JsonWebKey::Okp(okp_pk) => Ok(okp_pk),
+            _ => Err(Error::InvalidOperation("OKP".to_string())),
         }
     }
 
@@ -83,6 +94,7 @@ impl JsonWebKey {
         match self {
             JsonWebKey::Rsa(rsa_pk) => rsa_pk.x5t.clone(),
             JsonWebKey::Ec(_ec_pk) => None,
+            JsonWebKey::Okp(_okp_pk) => None,
         }
     }
 }
@@ -117,6 +129,18 @@ pub struct EcPublicJwk {
     x: String,
     #[serde(rename(deserialize = "y"))]
     y: String,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct OkpPublicJwk {
+    #[serde(rename(deserialize = "alg"))]
+    algorithm: Option<String>,
+    #[serde(rename(deserialize = "kid"))]
+    key_id: String,
+    #[serde(rename(deserialize = "crv"))]
+    curve: String,
+    #[serde(rename(deserialize = "x"))]
+    x: String,
 }
 
 impl RsaPublicJwk {
@@ -164,6 +188,24 @@ impl EcPublicJwk {
 
     pub fn y(&self) -> &str {
         &self.y
+    }
+}
+
+impl OkpPublicJwk {
+    pub fn key_id(&self) -> &str {
+        &self.key_id
+    }
+
+    pub fn algorithm(&self) -> Option<&str> {
+        self.algorithm.as_deref()
+    }
+
+    pub fn curve(&self) -> &str {
+        &self.curve
+    }
+
+    pub fn x(&self) -> &str {
+        &self.x
     }
 }
 
@@ -234,6 +276,34 @@ mod tests {
         let ec_pk = key.as_ec_public_key()?;
         assert_eq!("LEBfQpwTDXJtLFiPcnYvGv-WaFXZGBnFP_yGhLL9MGc", ec_pk.x());
         assert_eq!("a1Or3ovkpH12b0o3ruZUtm_z8bg3xQtHXi-uPC7UJT0", ec_pk.y());
+
+        Ok(())
+    }
+
+    #[test]
+    fn deserialize_public_okp_key_set() -> Result<(), Box<dyn std::error::Error>> {
+        let keys = r#"
+        {
+          "keys": [
+            {
+              "alg": "EdDSA",
+              "kty": "OKP",
+              "crv": "Ed25519",
+              "x": "11qYAYtk8C4QW2oZ3hJhiuK6V3rC1z1z5t3YhZ1t1nM",
+              "kid": "okp-key"
+            }
+          ]
+        }
+        "#;
+
+        let keyset: JsonWebKeySet = serde_json::from_str(keys)?;
+        let key = keyset.get_key("okp-key")?;
+
+        assert_eq!("EdDSA", key.alg().unwrap());
+
+        let okp_pk = key.as_okp_public_key()?;
+        assert_eq!("Ed25519", okp_pk.curve());
+        assert_eq!("11qYAYtk8C4QW2oZ3hJhiuK6V3rC1z1z5t3YhZ1t1nM", okp_pk.x());
 
         Ok(())
     }
