@@ -1,0 +1,19 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+spec:
+  type: library
+  lifecycle: production
+  owner: team-developer-experience
+  system: prima.it
+metadata:
+  name: jwks_client
+  description: A library to fetch and store Json Web Key Sets from your authentication provider.
+  tags:
+    - rust
+  links:
+    - url: https://crates.io/crates/jwks_client_rs
+      icon: link
+      title: crates.io page
+    - url: https://docs.rs/jwks_client_rs
+      icon: link
+      title: API documentation
