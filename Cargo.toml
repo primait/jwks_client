@@ -20,7 +20,7 @@ rustls-tls = ["reqwest/rustls-tls"]
 [dependencies]
 async-trait = "0.1"
 tokio = { version = "1", features = ["sync"] }
-jsonwebtoken = "10.2"
+jsonwebtoken = { version = "10.2", features = ["rust_crypto"] }
 chrono = { version = "0.4", default-features = false, features = ["clock"] }
 reqwest = { version = "0.12", default-features = false, features = ["json"] }
 serde = { version = "1.0", features = ["derive"]}
@@ -33,7 +33,7 @@ tracing = "0.1"
 tokio = { version = "1", features = ["macros"] }
 mockall = "0.14"
 httpmock = "0.8"
-rand = "0.9"
+rand = "0.10"
 
 [[example]]
 name = "get_jwks"
