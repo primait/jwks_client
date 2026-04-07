@@ -19,7 +19,15 @@ args = ["fmt", "--", "--check"]
 
 [tasks.test]
 command = "cargo"
-args = ["test", "${@}", "--all-features"]
+args = ["test", "${@}"]
+
+[tasks.test-rust-crypto]
+command = "cargo"
+args = ["test", "--no-default-features", "--features", "default-tls", "rust_crypto", "${@}"]
+
+[tasks.test-aws-lc-rs]
+command = "cargo"
+args = ["test", "--no-default-features", "--features", "default-tls", "aws_lc_rs", "${@}"]
 
 [tasks.clippy]
 command = "cargo"

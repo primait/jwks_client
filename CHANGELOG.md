@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - MSRV bumped to 1.88
+- Update jsonwebtoken to 10.x
 
 ---
 
