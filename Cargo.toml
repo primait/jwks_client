@@ -15,7 +15,7 @@ rust-version = "1.88"
 default = ["default-tls", "rust_crypto"]
 default-tls = ["reqwest/default-tls"]
 native-tls = ["reqwest/native-tls"]
-rustls-tls = ["reqwest/rustls-tls"]
+rustls = ["reqwest/rustls"]
 rust_crypto = ["jsonwebtoken/rust_crypto"]
 aws_lc_rs   = ["jsonwebtoken/aws_lc_rs"]
 
