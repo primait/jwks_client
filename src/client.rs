@@ -82,6 +82,8 @@ impl<T: JwksSource + Send + Sync + 'static> JwksClient<T> {
                 Validation::default()
             };
 
+            validation.validate_nbf = true;
+
             if !audience.is_empty() {
                 validation.set_audience(audience);
             }
