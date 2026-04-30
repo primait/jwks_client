@@ -282,14 +282,7 @@ mod test {
         mock.assert();
     }
 
-    #[tokio::test]
-    async fn decode_missing_kid_in_header() {
-        let source = crate::source::MockJwksSource::new();
-        let client = JwksClient::new(source, None);
-
-        // pem generated using: ssh-keygen -t rsa -b 4096 -m PEM -f jwtRS256.key
-        let encoding_key = EncodingKey::from_rsa_pem(
-            r#"-----BEGIN RSA PRIVATE KEY-----
+    const TEST_RSA_PRIVATE_KEY: &str = r#"-----BEGIN RSA PRIVATE KEY-----
 MIIJKgIBAAKCAgEA4QhIhmirPEBt68EpZLqpL+Ur5Aiwer6XQ3Xo/kzS2xsjYyj+
 PWX2Jd+XgpawEZAvWj+hQxGrni85kM4924v8cygyj9NIK1JH5u5hd9i7G0pvpz2d
 l0Wq3NzJd4Ei9u22nESi7d7XDA9L78jzCeKUOLySZQMCIfrxSL6DT+ilCQaWLOgE
@@ -339,11 +332,16 @@ YdWCauvVV4Yz47swvlj2f7NRogr+3iST944CtBcSnGGJJKVUGrQy2x4SDLqFShw+
 wpWJyFFdxQbZ6ovzOFw2suFf8sdLWkKKdAuiU6yjSTBv603cNUfARAIWYVxnkdNJ
 NKYCaOsVCgy0un3Kx0aBj0UX40ojyHdlsPJJck6AqZa6nnNmvji072Xe+lmH7BxN
 SQ1D7EfH/F2wy7Sj9YrRqTIgxk+gmk5T9d/iNwhIFdMnWRBQpt6h1H0T4t0WTA==
-            -----END RSA PRIVATE KEY-----"#
-                .trim()
-                .as_bytes(),
-        )
-        .unwrap();
+            -----END RSA PRIVATE KEY-----"#;
+
+    #[tokio::test]
+    async fn decode_missing_kid_in_header() {
+        let source = crate::source::MockJwksSource::new();
+        let client = JwksClient::new(source, None);
+
+        // pem generated using: ssh-keygen -t rsa -b 4096 -m PEM -f jwtRS256.key
+        let encoding_key =
+            EncodingKey::from_rsa_pem(TEST_RSA_PRIVATE_KEY.trim().as_bytes()).unwrap();
 
         let header = Header::new(Algorithm::RS256);
 
@@ -376,6 +374,130 @@ SQ1D7EfH/F2wy7Sj9YrRqTIgxk+gmk5T9d/iNwhIFdMnWRBQpt6h1H0T4t0WTA==
         }
     }
 
+    #[tokio::test]
+    async fn decode_rejects_token_when_nbf_is_in_the_future() {
+        use serde::{Deserialize, Serialize};
+        use std::time::{SystemTime, UNIX_EPOCH};
+
+        let server = MockServer::start();
+        let path = "/keys";
+        let kid = "test-kid";
+
+        let mock = server.mock(|when, then| {
+            when.method(GET).path(path);
+
+            then.status(200)
+                .header("content-type", "application/json")
+                .json_body(jwks_endpoint_response_with_matching_key(kid));
+        });
+
+        let url = Url::parse(&server.url(path)).unwrap();
+        let source = WebSource::builder().build(url).unwrap();
+        let client = JwksClient::new(source, None);
+
+        let encoding_key =
+            EncodingKey::from_rsa_pem(TEST_RSA_PRIVATE_KEY.trim().as_bytes()).unwrap();
+
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs() as usize;
+
+        #[derive(Debug, Serialize, Deserialize)]
+        struct Claims {
+            exp: usize,
+            nbf: usize,
+        }
+
+        let claims = Claims {
+            exp: now + 3600,
+            nbf: now + 3600,
+        };
+
+        let mut header = Header::new(Algorithm::RS256);
+        header.kid = Some(kid.to_string());
+
+        let token = jsonwebtoken::encode(&header, &claims, &encoding_key).unwrap();
+
+        let audience: &[String] = &[];
+        let result: Result<Claims, _> = client.decode(&token, audience).await;
+
+        let err = result
+            .as_ref()
+            .expect_err("token with future nbf should be rejected");
+
+        let JwksClientError::Error(inner) = err;
+
+        assert!(
+            matches!(inner.as_ref(), crate::error::Error::JsonWebToken(_)),
+            "expected JsonWebToken error, got: {inner:#?}"
+        );
+
+        let crate::error::Error::JsonWebToken(jwt_err) = inner.as_ref() else {
+            unreachable!("already asserted JsonWebToken error");
+        };
+
+        assert_eq!(
+            jwt_err.kind(),
+            &jsonwebtoken::errors::ErrorKind::ImmatureSignature
+        );
+
+        mock.assert();
+    }
+
+    #[tokio::test]
+    async fn decode_accepts_token_when_nbf_is_in_the_past() {
+        use serde::{Deserialize, Serialize};
+        use std::time::{SystemTime, UNIX_EPOCH};
+
+        let server = MockServer::start();
+        let path = "/keys";
+        let kid = "test-kid";
+
+        let mock = server.mock(|when, then| {
+            when.method(GET).path(path);
+
+            then.status(200)
+                .header("content-type", "application/json")
+                .json_body(jwks_endpoint_response_with_matching_key(kid));
+        });
+
+        let url = Url::parse(&server.url(path)).unwrap();
+        let source = WebSource::builder().build(url).unwrap();
+        let client = JwksClient::new(source, None);
+
+        let encoding_key =
+            EncodingKey::from_rsa_pem(TEST_RSA_PRIVATE_KEY.trim().as_bytes()).unwrap();
+
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs() as usize;
+
+        #[derive(Debug, Serialize, Deserialize)]
+        struct Claims {
+            exp: usize,
+            nbf: usize,
+        }
+
+        let claims = Claims {
+            exp: now + 3600,
+            nbf: now - 60,
+        };
+
+        let mut header = Header::new(Algorithm::RS256);
+        header.kid = Some(kid.to_string());
+
+        let token = jsonwebtoken::encode(&header, &claims, &encoding_key).unwrap();
+
+        let audience: &[String] = &[];
+        let result: Result<Claims, _> = client.decode(&token, audience).await;
+
+        assert!(result.is_ok(), "token with past nbf should be accepted");
+
+        mock.assert();
+    }
+
     fn jwks_endpoint_response(kid: &str) -> Value {
         json!({
               "keys": [
@@ -403,5 +525,35 @@ SQ1D7EfH/F2wy7Sj9YrRqTIgxk+gmk5T9d/iNwhIFdMnWRBQpt6h1H0T4t0WTA==
             .take(7)
             .map(char::from)
             .collect()
+    }
+
+    const TEST_EXPONENT: &str = "AQAB";
+
+    const TEST_MODULUS: &str = concat!(
+        "4QhIhmirPEBt68EpZLqpL-Ur5Aiwer6XQ3Xo_kzS2xsjYyj-PWX2Jd-XgpawEZAvWj-hQxGrni85kM4924v8cygy",
+        "j9NIK1JH5u5hd9i7G0pvpz2dl0Wq3NzJd4Ei9u22nESi7d7XDA9L78jzCeKUOLySZQMCIfrxSL6DT-ilCQaWLOgE",
+        "wRH44N_15bA0kQP0mgca-ehFIE3lEwS0QLB6V0LYrh3suoCvNDmMRJWEFhWdS0ZsxobCDQ7BK0i-Wrp-yWRy38Tk",
+        "udtfkcUS3TxHdf1-BApaBWuSOedAmsozdDKiRwHExN7kS81JwvpmdfZv_Jh3V-QaHJYs6KHPqZ5VEfUaUC4GnNOI",
+        "ZkT72L4tCzFpUGKLQhb9U8EodA5TDAdgKy_L3hia8endRbzQcxnmtE5iC0_13YHuZG4AZGP9uB07E0TlBxfRXBxL",
+        "bLG3KlTeZYo-8XA5-oVKm4-IS_zSn4y-9YHPPcWRTpyUw1onTuhBo8-ASM004ouX9dCSAnsMsDWqq1xR8aIk16cn",
+        "84INd7yrJLnnCtC5BBSzGCr1zojOio0X9Se8psyx96xVTIIchtHoSi8oNP95MaKXTgsf6WohXNRsqh75ICsP1AgK",
+        "9ciUmU2dN00QJI-AOnBbGGxyj2gfu7b_-fgNY_MsO8hZuasdIothNYEoXu1tc_U9Rbs",
+    );
+
+    fn jwks_endpoint_response_with_matching_key(kid: &str) -> Value {
+        json!({
+            "keys": [{
+                "alg": "RS256",
+                "kty": "RSA",
+                "use": "sig",
+                "n": TEST_MODULUS,
+                "e": TEST_EXPONENT,
+                "kid": kid,
+                "x5t": random_string(),
+                "x5c": [
+                    "MIIDDTCCAfWgAwIBAgIJWUyDuZMhkTwpMA0GCSqGSIb3DQEBCwUAMCQxIjAgBgNVBAMTGWRldi1mOHJkejF3dy5ldS5hdXRoMC5jb20wHhcNMjEwOTA2MDkxODQ0WhcNMzUwNTE2MDkxODQ0WjAkMSIwIAYDVQQDExlkZXYtZjhyZHoxd3cuZXUuYXV0aDAuY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA..."
+                ]
+            }]
+        })
     }
 }
