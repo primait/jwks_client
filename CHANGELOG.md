@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.6.0] - 2026-05-04
+
+### Added
+
+- JWT `nbf` claims are now validated when present
+
+---
+
 ## [0.5.3] - 2026-04-07
 
 ### Changed
@@ -117,10 +125,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - First release 🎉
 
 
-
-
-
-[Unreleased]: https://github.com/primait/jwks_client/compare/0.5.3...HEAD
+[Unreleased]: https://github.com/primait/jwks_client/compare/0.6.0...HEAD
+[0.6.0]: https://github.com/primait/jwks_client/compare/0.5.3...0.6.0
 [0.5.3]: https://github.com/primait/jwks_client/compare/0.5.2...0.5.3
 [0.5.2]: https://github.com/primait/jwks_client/compare/0.5.1...0.5.2
 [0.5.1]: https://github.com/primait/jwks_client/compare/0.5.0...0.5.1
