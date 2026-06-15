@@ -15,3 +15,14 @@ updates:
       # Check for cargo updates at 3am UTC
       time: "03:00"
     open-pull-requests-limit: 3
+  - package-ecosystem: docker
+    directories:
+      - "*"
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
