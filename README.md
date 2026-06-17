@@ -77,41 +77,23 @@ example:
 This project uses **[release-plz](https://release-plz.dev/)** for versioning and
 publishing to crates.io.
 
-### Workflow
+Upon push to `master`, the [CD Workflow](./.github/workflows/cd.yml) is
+triggered, which:
 
-1. **CI workflow** (on push and pull request):
-   - Runs format/lint/docs checks
-   - Runs tests
+- creates or updates a release Pull Request using `release-plz release-pr`
+- automatically releases any unpublished packages using `release-plz release`
 
-2. **CD workflow** (on push to `master`):
-   - Runs `release-plz release-pr`
-   - Analyzes commits using conventional commits
-   - Determines the next version based on Semantic Versioning
-   - Updates `Cargo.toml` with the new version
-   - Updates `CHANGELOG.md` with the changes
-   - Creates or updates the release Pull Request
-
-3. **Review & Merge**:
-   - Review the generated PR for accuracy
-   - Merge the PR to `master`
-
-4. **Automatic release and publish** (after merge, on next push to `master`):
-   - Runs `release-plz release`
-   - Creates git tag and GitHub release for unpublished packages
-   - Publishes unpublished packages to crates.io
+This means that to release a new version, you just need to merge the release PR
+created by `release-plz` and the rest of the process will be handled
+automatically.
 
 ### Conventional Commits
 
-To ensure the correct version bumping, use conventional commits:
+To ensure the correct version bumping, use
+[conventional commits](https://www.conventionalcommits.org/en/v1.0.0/) when
+squasing and merging to `master`. This is not yet enforced by any tool, so it's
+up to you to follow the convention.
 
-- `feat:` - New features (bumps minor version)
-- `fix:` - Bug fixes (bumps patch version)
-- `BREAKING CHANGE:` - Breaking changes in commit body (bumps major version)
-
-Example:
-
-```
-feat: add support for new algorithm
-
-BREAKING CHANGE: `some_function` has been removed
-```
+For breaking changes, it might be useful to include a `BREAKING CHANGE:` section
+in the commit body, which will trigger a major version bump. This is especially
+important if the breaking change is not obvious from the commit message itself.
