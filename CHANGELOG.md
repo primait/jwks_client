@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.1](https://github.com/primait/jwks_client/compare/v0.6.0...v0.6.1) - 2026-06-23
+
+### Other
+
+- Fully leverage release-plz to establish automated CI/CD ([#60](https://github.com/primait/jwks_client/pull/60))
+- add docker ecosystem to dependabot.yml ([#58](https://github.com/primait/jwks_client/pull/58))
+- add release-plz workflow to create PR after merge on master ([#56](https://github.com/primait/jwks_client/pull/56))
+- Bump Swatinem/rust-cache from 2.7.8 to 2.9.1 ([#53](https://github.com/primait/jwks_client/pull/53))
+- Bump actions/checkout from 3 to 6 ([#54](https://github.com/primait/jwks_client/pull/54))
+
 ---
 
 ## [0.6.0] - 2026-05-04
