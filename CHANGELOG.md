@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.2](https://github.com/primait/jwks_client/compare/v0.6.1...v0.6.2) - 2026-06-30
+
+### Other
+
+- Update mockall requirement from 0.14 to 0.15 ([#62](https://github.com/primait/jwks_client/pull/62))
+- Bump rust from 1.88 to 1.96 ([#59](https://github.com/primait/jwks_client/pull/59))
+
 ## [0.6.1](https://github.com/primait/jwks_client/compare/v0.6.0...v0.6.1) - 2026-06-23
 
 ### Other
