@@ -1,4 +1,4 @@
-FROM rust:1.96
+FROM 279066465364.dkr.ecr.eu-west-1.amazonaws.com/docker-hub/library/rust:1.96
 
 WORKDIR /code
 
