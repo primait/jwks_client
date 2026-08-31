@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.4](https://github.com/primait/jwks_client/compare/v0.6.3...v0.6.4) - 2026-08-31
+
+### Other
+
+- Bump rust from 1.96 to 1.98 ([#72](https://github.com/primait/jwks_client/pull/72))
+
 ## [0.6.3](https://github.com/primait/jwks_client/compare/v0.6.2...v0.6.3) - 2026-08-25
 
 ### Other
