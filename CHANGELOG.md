@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.6](https://github.com/primait/jwks_client/compare/v0.6.5...v0.6.6) - 2026-09-18
+
+### Other
+
+- iamp-rust-version-upgrade ([#77](https://github.com/primait/jwks_client/pull/77))
+- Bump release-plz/action from 0.5.132 to 0.5.136 ([#76](https://github.com/primait/jwks_client/pull/76))
+
 ## [0.6.5](https://github.com/primait/jwks_client/compare/v0.6.4...v0.6.5) - 2026-09-07
 
 ### Other
