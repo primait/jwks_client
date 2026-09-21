@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.7](https://github.com/primait/jwks_client/compare/v0.6.6...v0.6.7) - 2026-09-21
+
+### Other
+
+- Bump release-plz/action from 0.5.136 to 0.5.138 ([#79](https://github.com/primait/jwks_client/pull/79))
+
 ## [0.6.6](https://github.com/primait/jwks_client/compare/v0.6.5...v0.6.6) - 2026-09-18
 
 ### Other
