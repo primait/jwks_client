@@ -27,7 +27,7 @@ jobs:
           persist-credentials: false
       - run: rustup default 1.98.1
       - name: Run release-plz
-        uses: release-plz/action@b8d6b54b02889ff2ae2bb82e8b57c3a8fc1683a5
+        uses: release-plz/action@18641b6c63063cc5ff8786ebf69cd57e8541bae1
         with:
           command: release-pr
         env:
@@ -54,7 +54,7 @@ jobs:
           persist-credentials: false
       - run: rustup default 1.98.1
       - name: Run release-plz
-        uses: release-plz/action@b8d6b54b02889ff2ae2bb82e8b57c3a8fc1683a5
+        uses: release-plz/action@18641b6c63063cc5ff8786ebf69cd57e8541bae1
         with:
           command: release
         env:
