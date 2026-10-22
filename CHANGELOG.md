@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.11](https://github.com/primait/jwks_client/compare/v0.6.10...v0.6.11) - 2026-10-22
+
+### Other
+
+- iamp-emudhra-inc-rust-update ([#87](https://github.com/primait/jwks_client/pull/87))
+
 ## [0.6.10](https://github.com/primait/jwks_client/compare/v0.6.9...v0.6.10) - 2026-10-19
 
 ### Other
