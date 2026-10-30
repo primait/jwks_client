@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.12](https://github.com/primait/jwks_client/compare/v0.6.11...v0.6.12) - 2026-10-30
+
+### Other
+
+- Bump release-plz/action from 0.5.142 to 0.5.144 ([#91](https://github.com/primait/jwks_client/pull/91))
+- Update httpmock requirement from 0.8 to 0.9 ([#90](https://github.com/primait/jwks_client/pull/90))
+- Bump Swatinem/rust-cache from 2.9.2 to 2.9.3 ([#89](https://github.com/primait/jwks_client/pull/89))
+
 ## [0.6.11](https://github.com/primait/jwks_client/compare/v0.6.10...v0.6.11) - 2026-10-22
 
 ### Other
