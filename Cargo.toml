@@ -34,7 +34,7 @@ tracing = "0.1"
 [dev-dependencies]
 tokio = { version = "1", features = ["macros"] }
 mockall = "0.15"
-httpmock = "0.8"
+httpmock = "0.9"
 rand = "0.10"
 
 [[example]]
